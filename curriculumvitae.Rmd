@@ -1,0 +1,67 @@
+---
+title: Justin Singh-Mohudpur, Curriculum Vitae
+---
+
+# {.tabset}
+
+## Education
+
+  - *University of California, Santa Barbara*\
+    Bachelor of Science, Mathematics; Minor in Spatial Science\
+    **September 2019 - Present**\
+    
+  - *Merced College*\
+    Associates of Science, Computer Science and Mathematics\
+    **August 2016 - June 2019**\
+    
+  - *Community College of the Air Force*\
+    Associates of Science, Information Systems Technology\
+    **September 2017 - February 2018**\
+
+## Work Experience
+  - *United States Air Force Reserve*\
+    Network and Systems Administrator (Security)\
+    **September 2017 - Present**\
+      * Deployed, conﬁgured, and maintained VMWare technologies such as ESXi, vSAN, and vCenter.
+      
+      * Conﬁgured switching/routing services for Cisco and Dell appliances.
+      
+      * Managed Active Directory services supporting enterprise infrastructure (group policy, account management)
+      
+      * Responsible for researching, installation, maintenance, and monitoring of security solutions such as: Windows 2012R2 security servers (Nessus/ACAS, Host-based Security System), ﬁrewalls (ForcePoint NGFW, Palo Alto Networks), McAfee Web Gateway, and signature based IDS systems (Snort).
+      
+      * Created and maintained PowerShell and Bash scripts.
+      
+      * Implemented public key infrastructure (PKI) authentication methods compliant with DOD requirements.
+      
+      * Utilized Remedy for ticketing day-to-day operations for Tier 1 support.
+      
+      * Ensured software licensing and time-compliant technical orders from AF/DISA were accomplished.
+      
+      * Managed inventory and maintenance of Information Technology equipment infrastructure-wide.
+      
+      * Developed system documentation and operations contingency procedures from no previously existing documentation/procedures.
+      
+      * Developed and performed mitigation plan and performed remediation activities based on the ﬁndings to resolve network and system vulnerabilities to meet DOD compliance requirements.
+
+## Technical Strengths
+  - **Certifications**
+    * CompTIA Security+
+    * VMware VCP-DCV 2020 (in-progress)
+    * RHCSA (in-progress)
+    * CISSP (in-progress)
+    
+  - **Languages**
+    * Java
+    * Python
+    * PowerShell
+    * SQL
+    * MATLAB
+    * LaTeX
+    
+  - **Systems**
+    * Windows
+    * Debian
+    * Red Hat
+    * CiscoIOS
+    * Dell (L3/L2 Switches)

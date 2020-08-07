@@ -1,0 +1,20 @@
+---
+title: "About Me"
+---
+`r library(icon)`
+<center>
+# Hi, I'm Justin Singh-Mohudpur.
+</center>
+  
+<img src="img/me.png" style="width: 25%; float: right; margin: 0 0 1em 1em; border-radius:30px"/>
+Hi! Welcome to my project site for GEOG176A: Introduction to GIS.
+
+A little information about me:
+
+  - I'm a senior at UCSB majoring in **Mathematics** with a minor in **Spatial Science**.
+  - I'm a **Systems Administrator** and **Project Manager** for the *US Air Force Reserves*.
+  - I like to compete in **orienteering** (`r fa("map")` + `r fa("compass")`), which started my initial interest in geography!
+
+I participated in the UCSB Math department's annual Directed Reading Program, you can check out the presentation my group did on *elliptic curve cryptography* [here](https://ucsbdrp.weebly.com/2020-posters.html)!
+
+If you ever need to contact me, feel free to email me at [justin@justinsingh.me](mailto:justin@justinsingh.me) or [justinsingh-mohudpur@ucsb.edu](mailto:justinsingh-mohudpur@ucsb.edu).

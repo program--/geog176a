@@ -1,0 +1,23 @@
+name: "justin-singh-geog176a"
+output_dir: "."
+navbar:
+  title: "Introduction to GIS @ UCSB"
+  left:
+    - text: "Home"
+      icon: fa-home
+      href: index.html
+    - text: "GIS Work"
+      icon: fa-globe-americas
+      href: geog176A.html
+    - text: Github
+      icon: fa-github
+      href: https://github.com/program--/geog176a
+    - text: CV
+      icon: fa-file-text
+      href: curriculumvitae.html
+    - text: Personal Website
+      icon: fa-user
+      href: https://justinsingh.me
+output:
+  html_document:
+    theme: sandstone
