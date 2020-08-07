@@ -7,7 +7,7 @@ navbar:
       icon: fa-home
       href: index.html
     - text: "GIS Work"
-      icon: fa-globe-americas
+      icon: fa-globe
       href: geog176A.html
     - text: Github
       icon: fa-github
