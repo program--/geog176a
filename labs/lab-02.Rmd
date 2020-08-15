@@ -1,0 +1,169 @@
+---
+title: "Geography 176A"
+author: "[Justin Singh-M.](https://geog176a.justinsingh.me)"
+subtitle: 'Lab 02: COVID-19 Pandemic'
+output:
+  html_document:
+    theme: sandstone
+    code_folding: hide
+---
+```{r setup, include=FALSE}
+library(tidyverse)
+library(knitr)
+library(readxl)
+library(zoo)
+library(readxl)
+library(ggplot2)
+```
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+#url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
+url = 'data/us-counties.csv'
+
+covid = read_csv(url)
+```
+## COVID-19 California Statistics
+```{r, message=FALSE, warning=FALSE, results='hold'}
+# Wrangle data
+covidDaily <- covid %>%
+  filter(state == "California") %>%
+  group_by(county, state) %>%
+  mutate(dailyCases = cases - lag(cases)) %>%
+  ungroup()
+
+# Top cases
+knitr::kable(
+  covidDaily %>%
+    filter(date == max(date)) %>%
+    group_by(county) %>%
+    summarize(mostCases = max(cases)) %>%
+    arrange(-mostCases) %>%
+    head(5), 
+  col.names = c("County", "Confirmed Cases"),
+  caption = paste("Top COVID-19 cases by county (",max(covidDaily$date),")")
+)
+
+# Daily change in cases
+knitr::kable(
+  covidDaily %>%
+    filter(date == max(date)) %>%
+    group_by(county) %>%
+    #summarize(mostDailyCases = max(dailyCases)) %>%
+    arrange(-dailyCases) %>%
+    head(5),
+  #col.names = c("County", "Daily Change"),
+  caption = paste("New COVID-19 cases by county (",max(covidDaily$date),")")
+)
+
+PopulationEstimates <- read_excel("data/PopulationEstimates.xls") # Read in dataset
+names(PopulationEstimates) <- PopulationEstimates[2,] # Set headers
+PopulationEstimates <- PopulationEstimates[-c(1:2),] # Remove first two rows
+
+# Filter by California counties, excluding state population
+PopEstCA <- PopulationEstimates %>% filter(State == "CA", Area_Name != "California")
+
+# Get only counties and 2019 population estimate
+PopEstCA2019 <- PopEstCA %>% select(Area_Name, POP_ESTIMATE_2019)
+
+# Remove "County" from each Area_Name value
+PopEstCA2019 <- PopEstCA2019 %>%
+  mutate(county = str_remove_all(Area_Name, regex(".County")))
+
+covidCAPop <- covidDaily %>%
+  group_by(county) %>%
+  left_join(PopEstCA2019, by = "county")
+
+# Most cumulative cases per capita
+knitr::kable(
+  covidCAPop %>%
+    filter(date == max(date)) %>%
+    group_by(county) %>%
+    mutate(casesPerCapita = cases/as.double(POP_ESTIMATE_2019)) %>%
+    summarize(casesPerCapita = max(casesPerCapita)) %>%
+    arrange(-casesPerCapita) %>%
+    ungroup() %>%
+    head(5),
+  col.names = c("County", "Cases per Capita"),
+  caption = paste("Most Cumulative COVID-19 Cases per Capita (",max(covidCAPop$date),")")
+)
+
+# most new cases per capita
+knitr::kable(
+  covidCAPop %>%
+    filter(date == max(date)) %>%
+    group_by(county) %>%
+    mutate(casesPerCapita = dailyCases/as.double(POP_ESTIMATE_2019)) %>%
+    summarize(casesPerCapita = max(casesPerCapita)) %>%
+    arrange(-casesPerCapita) %>%
+    ungroup() %>%
+    head(5),
+  col.names = c("County", "New Cases per Capita"),
+  caption = paste("Most New COVID-19 Cases per Capita (",max(covidCAPop$date),")")
+)
+
+# Newest cases per 100,000 people for last 14 days
+knitr::kable(
+  covidCAPop %>%
+    filter(date > max(date)-14, county != "Unknown") %>%
+    group_by(date) %>%
+    summarize(newCases = sum(cases, na.rm = TRUE)/100000) %>%
+    ungroup() %>%
+    arrange(-newCases),
+  col.names = c("Date", "New Cases per 100,000 people"),
+  caption = paste("Newest COVID-19 Cases per 100,000 people for the last 14 days")
+)
+
+options(scipen=999) # Do not use scientific notation
+
+# Get total cases
+covidDaily %>%
+  filter(date == max(date)) %>%
+  group_by(date) %>%
+  summarize(cases = sum(cases, na.rm = TRUE)) %>%
+  ungroup() %>%
+  pull(cases) ->
+  totalCases
+
+# Get total new cases
+covidDaily %>%
+  filter(date == max(date)) %>%
+  group_by(date) %>%
+  summarize(dailyCases = sum(dailyCases, na.rm = TRUE)) %>%
+  ungroup() %>%
+  pull(dailyCases) ->
+  newCases
+
+# Get safe counties
+covidDaily %>%
+  filter(date > max(date)-14, cases <= 0) %>%
+  arrange(dailyCases) %>%
+  count() %>%
+  pull(n) ->
+  safeCounties
+```
+
+As of *`r max(covidDaily$date)`*, there were **`r totalCases`** confirmed COVID-19 cases and **`r newCases`** new confirmed COVID-19 cases. 
+
+Determined by having zero cases, there are **`r safeCounties` safe counties** in California.
+
+### New Cases in NY, CA, LA, and FL
+```{r}
+stateList = c("New York", "California", "Louisiana", "Florida")
+
+covid %>%
+  group_by(date,state) %>%
+  summarize(stateCases = sum(cases, na.rm = TRUE)) %>%
+  filter(state %in% stateList) %>%
+  ungroup() %>%
+  group_by(state) %>%
+  mutate(dailyCases = stateCases - lag(stateCases), rollingMean = rollmean(dailyCases,7,fill=NA,align="right")) %>%
+  ungroup() ->
+  dailyAndRolling
+
+# BAR PLOT NOT WORKING?
+dailyAndRolling %>%
+  ggplot(aes(x=date, fill=state)) +
+  geom_bar(aes(y=dailyCases),stat="identity") +
+  geom_line(aes(y=rollingMean)) + 
+  facet_wrap(~state)
+```
