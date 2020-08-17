@@ -12,13 +12,11 @@ library(tidyverse)
 library(knitr)
 library(readxl)
 library(zoo)
-library(readxl)
 library(ggplot2)
 ```
 
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
-#url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
-url = 'data/us-counties.csv'
+url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
 
 covid = read_csv(url)
 ```
@@ -48,10 +46,10 @@ knitr::kable(
   covidDaily %>%
     filter(date == max(date)) %>%
     group_by(county) %>%
-    #summarize(mostDailyCases = max(dailyCases)) %>%
+    summarize(dailyCases) %>%
     arrange(-dailyCases) %>%
     head(5),
-  #col.names = c("County", "Daily Change"),
+  col.names = c("County", "Daily Change"),
   caption = paste("New COVID-19 cases by county (",max(covidDaily$date),")")
 )
 
@@ -147,7 +145,7 @@ As of *`r max(covidDaily$date)`*, there were **`r totalCases`** confirmed COVID-
 Determined by having zero cases, there are **`r safeCounties` safe counties** in California.
 
 ### New Cases in NY, CA, LA, and FL
-```{r}
+```{r, message=FALSE, warning=FALSE, results = 'hold', fig.align='center'}
 stateList = c("New York", "California", "Louisiana", "Florida")
 
 covid %>%
@@ -160,10 +158,96 @@ covid %>%
   ungroup() ->
   dailyAndRolling
 
-# BAR PLOT NOT WORKING?
 dailyAndRolling %>%
   ggplot(aes(x=date, fill=state)) +
   geom_bar(aes(y=dailyCases),stat="identity") +
   geom_line(aes(y=rollingMean)) + 
-  facet_wrap(~state)
+  facet_wrap(~state) +
+  labs(title = "New COVID-19 Cases in Selected States Over Time",
+       x = "", 
+       y = "Cases per day",
+       subtitle = "Source: NYTimes") +
+  theme_bw()
+
+# Get selected states pop est
+PopulationEstimates %>%
+  filter(Area_Name %in% c('New York', 'California', 'Louisiana', 'Florida')) %>%
+  mutate(state = Area_Name) %>%
+  select(state, POP_ESTIMATE_2019) ->
+  totalPopEst
+
+# Join pop ests to covid data
+dailyAndRolling %>%
+  group_by(state) %>%
+  left_join(totalPopEst, by = "state") %>%
+  mutate(casesPerCapita = dailyCases/as.numeric(POP_ESTIMATE_2019), rollingMeanPerCapita = rollmean(casesPerCapita,7,fill=NA,align="right")) %>%
+  ungroup() ->
+  statePerCapitaDailyAndRolling
+
+# Plot
+statePerCapitaDailyAndRolling %>%
+  ggplot(aes(x=date, fill=state)) +
+  geom_bar(aes(y=casesPerCapita),stat="identity") +
+  geom_line(aes(y=rollingMeanPerCapita)) + 
+  scale_fill_brewer(palette="Dark2") +
+  facet_wrap(~state) +
+  labs(title = "New COVID-19 Cases per Capita in Selected States Over Time",
+       x = "", 
+       y = "Cases per capita per day",
+       subtitle = "Source: NYTimes") +
+  theme_bw()
 ```
+
+The primary indicator when analyzing the difference between cases per capita and pure cases is the population estimate.
+
+```{r, message=FALSE, warning=FALSE, results='hold'}
+knitr::kable(
+  totalPopEst %>%
+    summarize(state, POP_ESTIMATE_2019),
+  col.names = c("State", "Population Estimate"),
+  caption = paste("Total Population Estimates per State (2019)")
+)
+```
+
+Based on new confirmed cases per capita versus purely new cases, California's situation seems more in control with its population in comparison to Louisiana, which has a significantly worse situation when relating its population to number of confirmed cases. Both Florida and New York seem to have proportionately the expected number of cases in relation to their population.
+
+### Weighted Mean Center across the USA
+```{r, message=FALSE, warning=FALSE, results='hold', fig.align='center'}
+options(scipen=999) # Do not use scientific notation
+readr::read_csv("data/county-centroids.csv") %>%
+  select(fips, name, LON, LAT) ->
+  countyCentroids
+
+covid %>%
+  filter(county != "Unknown") %>%
+  mutate(fips = case_when(
+    county == "New York City" ~ "36061",
+    county == "Joplin" ~ "29097",
+    county == "Kansas City" ~ "29047",
+    !(county %in% c("New York City", "Joplin", "Kansas City")) ~ fips
+  )) %>%
+  full_join(countyCentroids, by = c("fips")) %>%
+  group_by(date, county) %>%
+  mutate(cumulativeCases = sum(cases, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(date) %>%
+  mutate(totalCasesPerDay = sum(cases, na.rm = TRUE),
+         x_coord = sum(LON * cases, na.rm = TRUE)/sum(cases, na.rm = TRUE),
+         y_coord = sum(LAT * cases, na.rm = TRUE)/sum(cases, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(format(date,"%m")) %>%
+  mutate(totalCasesPerMonth = sum(cases, na.rm = TRUE)) %>%
+  ungroup() %>%
+  filter(!(is.na(date))) %>%
+  ggplot(aes(x = LON, y = LAT)) +
+  borders("state", fill = "gray90", colour = "white") +
+  geom_point(aes(x = x_coord, y = y_coord, colour = format(date, "%m"), size = totalCasesPerDay), alpha = 0.5) +
+  labs(title = "Weighted Mean Center for COVID-19 Cases across the United States",
+       subtitle = "Source: NYTimes",
+       size = "Confirmed Cases per Day",
+       colour = "Month") +
+  scale_color_hue(labels = c(month.name)) +
+  theme_void()
+```
+
+The movement of the COVID-19 weighted mean center directly correlates to where breakouts of COVID-19 cases are occurring. From January, notice that the first points occur in the north west, particularly due to the initial outbreak in Seattle, Washington. As time passes, the weighted mean center moves toward the east coast, due to the outbreak in New York in April. As we approach today, the weighted mean center is beginning to shift toward the mid-west, as we can see the current outbreaks happening within California, Florida, and Texas.
