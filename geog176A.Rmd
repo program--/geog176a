@@ -11,3 +11,9 @@ In the summer of 2020 I took a class GIS course based in R. I wrote some code, a
   - For this assignment, we built a static website using **Rmarkdown**.
   - Includes a project github repository for access, view it [here](https://github.com/program--/geog176a) or by clicking on the above header.
   - Deployed project site as separate repo from main website repo using **Netlify**.
+
+##[`r fa("bar-chart")` Tracking COVID-19 Data](https://geog176a.justinsingh.me/labs/lab-02)
+  
+  - Parsed real-world data using **tidyverse** functions and plotted using **ggplot2**.
+  - Used statistical methods for analyzing confirmed COVID-19 cases.
+  - Analyzed COVID-19's weighted mean center travel across the United States.
