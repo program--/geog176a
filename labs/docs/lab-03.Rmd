@@ -1,0 +1,165 @@
+---
+title: "Geography 176A"
+author: "[Justin Singh-M.](https://geog176a.justinsingh.me)"
+subtitle: 'Lab 03: Distances and the Border Zone'
+output:
+  html_document:
+    theme: sandstone
+    code_folding: hide
+---
+
+```{r setup, include = FALSE, warning = FALSE, message = FALSE}
+# SPDS
+library(tidyverse)
+library(sf)
+library(units)
+
+# Data
+library(USAboundaries)
+library(rnaturalearthdata)
+
+# Visualization
+library(gghighlight)
+library(ggrepel)
+library(knitr)
+```
+## Getting Spatial Data
+```{r, warning = FALSE, message = FALSE, results = 'hold'}
+USAboundaries::us_states(resolution = "low") %>%
+  filter(!(name %in% c("Puerto Rico", "Alaska", "Hawaii"))) %>%
+  st_transform(5070) ->
+  USAconus
+
+rnaturalearthdata::countries110 %>%
+  st_as_sf() %>%
+  filter(admin %in% c("Mexico", "United States of America", "Canada")) %>%
+  st_transform(5070) ->
+  northAmericaBoundaries
+
+read_csv("../data/uscities.csv") %>%
+  filter(!(state_name %in% c("Puerto Rico", "Alaska", "Hawaii"))) %>%
+  select(city, state_id, state_name, county_name, lat, lng, population) %>%
+  st_as_sf(coords = c("lng", "lat"), crs = 4326) %>%
+  st_transform(5070) ->
+  USAcities
+```
+
+## Distances
+```{r, warning = FALSE, message = FALSE, results = 'hold'}
+# Get USA border
+USAboundaries::us_states(resolution = "low") %>%
+  st_transform(5070) %>%
+  st_union() %>%
+  st_cast("MULTILINESTRING") ->
+  USAborder
+
+# Add column for city distance to border
+USAcities %>%
+  mutate(dist_to_border = st_distance(USAcities, USAborder) %>%
+           set_units("km") %>%
+           drop_units()) ->
+  USAcities
+
+# Create table for the 5 farthest cities from border
+knitr::kable(
+  USAcities %>%
+    as.data.frame() %>%
+    select(city, state_name, dist_to_border) %>%
+    arrange(-dist_to_border) %>%
+    head(5),
+  col.names = c("City", "State", "Distance to USA Border (km)"),
+  caption = "US cities farthest from national border or coastline"
+)
+
+# Get USA State borders
+USAboundaries::us_states(resolution = "low") %>%
+  st_transform(5070) %>%
+  st_combine() %>%
+  st_cast("MULTILINESTRING") ->
+  USAstateBorders
+
+# Add column for city distance to state border
+USAcities %>%
+  mutate(dist_to_state_border = st_distance(USAcities, USAstateBorders) %>%
+           set_units("km") %>%
+           drop_units()) ->
+  USAcities
+
+# Create table for the 5 farthest cities from their state border
+knitr::kable(
+  USAcities %>%
+    as.data.frame() %>%
+    select(city, state_name, dist_to_state_border) %>%
+    arrange(-dist_to_state_border) %>%
+    head(5),
+  col.names = c("City", "State", "Distance to State Border (km)"),
+  caption = "US cities farthest from respective state border"
+)
+
+# Get Mexico national border
+northAmericaBoundaries %>%
+  filter(admin == "Mexico") %>%
+  st_union() %>%
+  st_cast("MULTILINESTRING") ->
+  mexicoBorder
+
+# Add column for city distance to Mexico
+USAcities %>%
+  mutate(dist_to_mexico_border = st_distance(USAcities, mexicoBorder) %>%
+           set_units("km") %>%
+           drop_units()) ->
+  USAcities
+
+# Create table for the 5 farthest cities from their state border
+knitr::kable(
+  USAcities %>%
+    as.data.frame() %>%
+    select(city, state_name, dist_to_mexico_border) %>%
+    arrange(-dist_to_mexico_border) %>%
+    head(5),
+  col.names = c("City", "State", "Distance to Mexican Border (km)"),
+  caption = "US cities farthest from Mexican border"
+)
+
+# Get Canada national border
+northAmericaBoundaries %>%
+  filter(admin == "Canada") %>%
+  st_union() %>%
+  st_cast("MULTILINESTRING") ->
+  canadaBorder
+
+# Add column for city distance to Canada
+USAcities %>%
+  mutate(dist_to_canada_border = st_distance(USAcities, canadaBorder) %>%
+           set_units("km") %>%
+           drop_units()) ->
+  USAcities
+
+# Create table for the 5 farthest cities from Canada
+knitr::kable(
+  USAcities %>%
+    as.data.frame() %>%
+    select(city, state_name, dist_to_canada_border) %>%
+    arrange(-dist_to_canada_border) %>%
+    head(5),
+  col.names = c("City", "State", "Distance to Canadian Border (km)"),
+  caption = "US cities farthest from Canadian border"
+)
+
+ggplot() +
+  geom_sf(data = mexicoBorder, lty = 2) +
+  geom_sf(data = canadaBorder, lty = 2) +
+  geom_sf(data = USAconus, size = 0.75) +
+  geom_sf(data = USAcities %>%
+               arrange(-population) %>%
+               head(10)
+          ) +
+  geom_label_repel(data = USAcities %>%
+                     arrange(-population) %>%
+                     head(10), 
+                   aes(label = city, geometry = geometry),
+                   stat = "sf_coordinates",
+                   size = 1.5) +
+  ggthemes::theme_map() 
+  
+```
