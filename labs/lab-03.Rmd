@@ -46,7 +46,7 @@ theme_map <- function(...) {
       plot.title = element_text(hjust = 0.5, color = "#4e4d47", size = 16),
       # panel.background = element_rect(fill = "#f5f5f2", color = NA),
       panel.background = element_blank(),
-      legend.background = element_rect(fill = "#f5f5f2", color = NA),
+      legend.background = element_rect(fill = NA, color = NA),
       legend.position = "bottom",
       panel.border = element_blank(),
       ...
@@ -66,7 +66,7 @@ rnaturalearthdata::countries110 %>%
   st_transform(5070) ->
   northAmericaBoundaries
 
-read_csv("../data/uscities.csv") %>%
+read_csv("data/uscities.csv") %>%
   filter(!(state_name %in% c("Puerto Rico", "Alaska", "Hawaii"))) %>%
   select(city, state_id, state_name, county_name, lat, lng, population) %>%
   st_as_sf(coords = c("lng", "lat"), crs = 4326) %>%
@@ -178,7 +178,6 @@ knitr::kable(
   caption = "US cities farthest from Canadian border"
 )
 ```
-## Data We Will be Working With
 ```{r, warning = FALSE, message = FALSE, results = 'hold'}
 ggplot() +
   geom_sf(data = mexicoBorder, lty = 2) +
@@ -313,17 +312,44 @@ ggplot() +
   geom_sf(data = USAcities, aes(colour = dist_to_border)) +
   gghighlight(dist_to_border <= 160,
               unhighlighted_params = list(alpha = 0.1)) +
-  scale_colour_gradient(low = "darkred", high = "orange") +
-  geom_label_repel(data = USAcities %>%
+  geom_sf(data = USAcities %>%
+                     filter(dist_to_border <= 160) %>%
                      group_by(state_name) %>%
                      summarize(population = max(population)) %>%
-                     st_join(USAcities %>%
-                               select(state_name, population, city, geometry),
-                             by = c("population", "state_name"),
-                             left = TRUE,
-                             .predicate),
+                     st_drop_geometry() %>%
+                     as.data.frame() %>%
+                     left_join(USAcities %>%
+                                 filter(dist_to_border <= 160) %>%
+                                 select(state_name, population, city),
+                               by = c("population", "state_name")) %>%
+                     st_as_sf()) +
+  scale_colour_gradient(low = "darkred",
+                        high = "orange",
+                        guide = guide_colorbar(
+                          title = "Distance to US National Border (km)",
+                          direction = "horizontal",
+                          barheight = unit(2, units = "mm"),
+                          barwidth = unit(50, units = "mm"),
+                          draw.ulim = F,
+                          title.position = 'top',
+                          title.hjust = 0.5,
+                          label.hjust = 0.5
+                         )) +
+  geom_label_repel(data = USAcities %>%
+                     filter(dist_to_border <= 160) %>%
+                     group_by(state_name) %>%
+                     summarize(population = max(population)) %>%
+                     st_drop_geometry() %>%
+                     as.data.frame() %>%
+                     left_join(USAcities %>%
+                                 filter(dist_to_border <= 160) %>%
+                                 select(state_name, population, city),
+                               by = c("population", "state_name")) %>%
+                     st_as_sf(),
                    aes(label = city, geometry = geometry),
                    stat = "sf_coordinates",
-                   point.padding = 0.5,
-                   force = 2)
+                   size = 2.5,
+                   force = 2) +
+  labs(title = "Largest Cities in each State within 100 miles of US National Border") +
+  theme_map()
 ```
