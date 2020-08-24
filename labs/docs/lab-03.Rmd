@@ -22,8 +22,38 @@ library(rnaturalearthdata)
 library(gghighlight)
 library(ggrepel)
 library(knitr)
+library(viridis)
+library(mapproj)
+
+#library(showtext)
+#font_add_google("Ubuntu")
+theme_map <- function(...) {
+  theme_minimal() +
+    theme(
+      text = element_text(family = "Ubuntu Regular", color = "#22211d"),
+      axis.line = element_blank(),
+      axis.text.x = element_blank(),
+      axis.text.y = element_blank(),
+      axis.ticks = element_blank(),
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank(),
+      #panel.grid.minor = element_line(color = "#ebebe5", size = 0.2),
+      #panel.grid.major = element_line(color = "#ebebe5", size = 0.2),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      # plot.background = element_rect(fill = "#f5f5f2", color = NA),
+      plot.background = element_blank(),
+      plot.title = element_text(hjust = 0.5, color = "#4e4d47", size = 16),
+      # panel.background = element_rect(fill = "#f5f5f2", color = NA),
+      panel.background = element_blank(),
+      legend.background = element_rect(fill = "#f5f5f2", color = NA),
+      legend.position = "bottom",
+      panel.border = element_blank(),
+      ...
+    )
+}
 ```
-## Getting Spatial Data
+### Getting Spatial Data
 ```{r, warning = FALSE, message = FALSE, results = 'hold'}
 USAboundaries::us_states(resolution = "low") %>%
   filter(!(name %in% c("Puerto Rico", "Alaska", "Hawaii"))) %>%
@@ -43,6 +73,8 @@ read_csv("../data/uscities.csv") %>%
   st_transform(5070) ->
   USAcities
 ```
+
+***
 
 ## Distances
 ```{r, warning = FALSE, message = FALSE, results = 'hold'}
@@ -145,7 +177,9 @@ knitr::kable(
   col.names = c("City", "State", "Distance to Canadian Border (km)"),
   caption = "US cities farthest from Canadian border"
 )
-
+```
+## Data We Will be Working With
+```{r, warning = FALSE, message = FALSE, results = 'hold'}
 ggplot() +
   geom_sf(data = mexicoBorder, lty = 2) +
   geom_sf(data = canadaBorder, lty = 2) +
@@ -159,7 +193,137 @@ ggplot() +
                      head(10), 
                    aes(label = city, geometry = geometry),
                    stat = "sf_coordinates",
-                   size = 1.5) +
-  ggthemes::theme_map() 
-  
+                   size = 2,
+                   point.padding = 0.5,
+                   force = 2) +
+  theme_map()
+```
+
+***
+
+```{r, warning = FALSE, message = FALSE, results = 'hold'}
+ggplot() +
+  geom_sf(data = USAconus) +
+  geom_sf(data = USAcities, aes(colour = dist_to_border), alpha = 0.25) +
+  geom_sf(data = USAcities %>%
+            arrange(-dist_to_border) %>%
+            head(5), colour = "red") +
+  geom_label_repel(data = USAcities %>%
+                     arrange(-dist_to_border) %>%
+                     head(5), 
+                   aes(label = city, geometry = geometry),
+                   stat = "sf_coordinates",
+                   point.padding = 0.5,
+                   force = 2) +
+  scale_colour_viridis(option = "cividis",
+                       direction = -1,
+                       name = "Distance to US National Border",
+                       guide = guide_colorbar(
+                         direction = "horizontal",
+                         barheight = unit(2, units = "mm"),
+                         barwidth = unit(50, units = "mm"),
+                         draw.ulim = F,
+                         title.position = 'top',
+                         title.hjust = 0.5,
+                         label.hjust = 0.5
+                         )) +
+  labs(title = "Cities Farthest from US National Border") +
+  theme_map()
+```
+```{r, warning = FALSE, message = FALSE, results = 'hold'}
+ggplot() +
+  geom_sf(data = USAconus) +
+  geom_sf(data = USAcities, aes(colour = dist_to_state_border), alpha = 0.25) +
+  geom_sf(data = USAcities %>%
+            arrange(-dist_to_state_border) %>%
+            head(5), colour = "red") +
+  geom_label_repel(data = USAcities %>%
+                     arrange(-dist_to_state_border) %>%
+                     head(5),
+                   aes(label = city, geometry = geometry),
+                   stat = "sf_coordinates",
+                   point.padding = 0.5,
+                   force = 2) +
+  scale_colour_viridis(option = "viridius",
+                       direction = -1,
+                       name = "Distance to Closest State Border",
+                       guide = guide_colorbar(
+                         direction = "horizontal",
+                         barheight = unit(2, units = "mm"),
+                         barwidth = unit(50, units = "mm"),
+                         draw.ulim = F,
+                         title.position = 'top',
+                         title.hjust = 0.5,
+                         label.hjust = 0.5
+                         )) +
+  labs(title = "Cities Farthest from US and State Borders") +
+  theme_map()
+```
+```{r, warning = FALSE, message = FALSE, results = 'hold'}
+USAcities %>%
+  mutate(mexico_to_canada = abs(dist_to_mexico_border - dist_to_canada_border)) ->
+  USAcities
+
+ggplot() +
+  geom_sf(data = USAconus) +
+  geom_sf(data = USAcities, aes(mexico_to_canada, colour = mexico_to_canada)) +
+  scale_colour_viridis(option = "magma",
+                       direction = -1,
+                       name = "Equidistance Between Mexico and Canada",
+                       guide = guide_colorbar(
+                         direction = "horizontal",
+                         barheight = unit(2, units = "mm"),
+                         barwidth = unit(50, units = "mm"),
+                         draw.ulim = F,
+                         title.position = 'top',
+                         title.hjust = 0.5,
+                         label.hjust = 0.5
+                         )) +
+  gghighlight(mexico_to_canada <= 100,
+              unhighlighted_params = list(alpha = 0.1)) +
+  geom_label_repel(data = USAcities %>%
+                     filter(mexico_to_canada <= 100) %>%
+                     arrange(-population) %>%
+                     head(5),
+                   aes(label = city, geometry = geometry),
+                   stat = "sf_coordinates",
+                   point.padding = 0.5,
+                   force = 2) +
+  labs(title = "Most Populous Cities Equidistant from Mexico and Canada") +
+  theme_map()
+```
+
+***
+
+## Federal Agencies' Claims to the 100 Mile Border Zone
+```{r, warning = FALSE, message = FALSE, results = 'hold'}
+knitr::kable(
+  USAcities %>%
+    as.data.frame() %>%
+    filter(dist_to_border <= 160) %>% 
+    summarize(Cities = formatC(n(), format = "f", big.mark = ",", digits = 0),
+              Population = formatC(sum(population), format = "f", big.mark = ",", digits = 0),
+              Percentage = paste0(formatC(sum(population)/sum(USAcities$population) * 100, format = "f", digits = 2), "%"),
+              ACLU = "Based on this [ACLU article](https://www.aclu.org/other/constitution-100-mile-border-zone), the population and cities within 100 miles of the US national border are accurate."),
+  col.names = c("Cities", "Total Population", "Percentage of US Population", "ACLU Correspondence"))
+```
+```{r, warning = FALSE, message = FALSE, results = 'hold'}
+ggplot() +
+  geom_sf(data = USAconus) +
+  geom_sf(data = USAcities, aes(colour = dist_to_border)) +
+  gghighlight(dist_to_border <= 160,
+              unhighlighted_params = list(alpha = 0.1)) +
+  scale_colour_gradient(low = "darkred", high = "orange") +
+  geom_label_repel(data = USAcities %>%
+                     group_by(state_name) %>%
+                     summarize(population = max(population)) %>%
+                     st_join(USAcities %>%
+                               select(state_name, population, city, geometry),
+                             by = c("population", "state_name"),
+                             left = TRUE,
+                             .predicate),
+                   aes(label = city, geometry = geometry),
+                   stat = "sf_coordinates",
+                   point.padding = 0.5,
+                   force = 2)
 ```
