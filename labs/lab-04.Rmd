@@ -1,0 +1,329 @@
+---
+title: "Geography 176A"
+author: "[Justin Singh-M.](https://geog176a.justinsingh.me)"
+subtitle: 'Lab 04: Tessellations, Point-in-Polygon'
+output:
+  html_document:
+    theme: sandstone
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+<style>
+  .two-cols {
+    columns: 2 200px;         /* number of columns and width in pixels*/
+    -webkit-columns: 2 200px; /* chrome, safari */
+    -moz-columns: 2 200px;    /* firefox */
+  }
+</style>
+
+```{r setup, include = FALSE, warning = FALSE, message = FALSE}
+# SPDS
+library(tidyverse)
+library(sf)
+
+# Data
+library(USAboundaries)
+
+# Visualization
+library(gghighlight)
+library(rmapshaper)
+library(mapview)
+```
+
+```{r, warning = FALSE, message = FALSE}
+# Function Definitions
+
+get_conus_spatial <- function(data, var, proj = 5070, abb = FALSE) {
+    # Filter CONUS from a spatial US dataset and modify its projection.
+    #
+    # Args:
+    #   data: Spatial US dataset to filter.
+    #   var: Column of "data" that contains states' information.
+    #   proj: EPSG code to project dataset to, defaults to EPSG:5070.
+    #   abb: If TRUE, then states in "var" are denoted with abbreviations;
+    #        If FALSE, then states in "var" are denoted by their full names.
+    #
+    # Returns:
+    #   A spatial CONUS dataset projected to given EPSG code.
+    if (abb) {
+        conus <- filter(data,
+            !(get(var)) %in% c("AK", "HI", "PR", "GU"))
+    } else {
+        conus <- filter(data,
+            !(get(var)) %in% c("Alaska", "Hawaii", "Puerto Rico", "Guam"))
+    }
+
+    conus <- sf::st_transform(conus, proj)
+    return(conus)
+}
+
+generate_tiles <- function(data, tile_type = TRUE) {
+    # Generate tiled spatial data from four tessellation/coverage options.
+    #
+    # Args:
+    #   data: Spatial dataset to tesselate
+    #   tile_type: "square" - square coverage with "n = 70"
+    #              "hexagonal" - hexagonal coverage with "n = 70"
+    #              "voroni" - voroni tesselation
+    #              "triangulate" - Delaunay triangulation
+    #              none of the above - unmodified data
+    #
+    # Returns:
+    #   A spatial, tiled dataset from a given dataset and
+    #   tessellation/coverage type or unmodified data.
+
+    if (tile_type == "square") {
+        tiled_data <- sf::st_make_grid(data, n = 70)
+    } else if (tile_type == "hexagonal") {
+        tiled_data <- sf::st_make_grid(data, n = 70, square = FALSE)
+    } else if (tile_type == "voroni") {
+        tiled_data <- sf::st_centroid(data) %>%
+            sf::st_combine() %>%
+            sf::st_voronoi() %>%
+            sf::st_cast()
+    } else if (tile_type == "triangulate") {
+        tiled_data <- sf::st_centroid(data) %>%
+            sf::st_combine() %>%
+            sf::st_triangulate() %>%
+            sf::st_cast()
+    } else {
+        return(data)
+    }
+
+    tiled_data <- sf::st_as_sf(tiled_data) %>%
+        mutate(id = 1:n())
+
+    return(tiled_data)
+}
+
+plot_map <- function(data, title = "", include_features = TRUE) {
+    # Plot spatial data using ggplot() + geom_sf().
+    #
+    # Args:
+    #   data: Spatial dataset to plot.
+    #   title: Title shown on plot.
+    #   include_features: If TRUE, include caption of features collected.
+    #
+    # Returns:
+    #   A plotted ggplot() map with, a white background,
+    #   navy border, size = 0.2, features collected, and given title.
+
+    ggplot() +
+        geom_sf(
+            data = data,
+            fill = "white",
+            colour = "navy",
+            size = 0.2
+        ) +
+        theme_void() +
+        labs(
+            title = title,
+            caption = if (include_features) {
+                paste(nrow(data), " features collected")
+            } else {
+                ""
+            }
+        )
+}
+```
+
+# Function Definitions
+
+For explicit function code, click the above "Code" button.
+
+### `get_conus_spatial()`
+    Filter CONUS from a spatial US dataset and modify its projection.
+
+    Args:
+        data: Spatial US dataset to filter.
+        var: Column of "data" that contains states' information.
+        proj: EPSG code to project dataset to, defaults to EPSG:5070.
+        abb: If TRUE, then states in "var" are denoted with abbreviations;
+             If FALSE, then states in "var" are denoted by their full names.
+
+    Returns:
+        A spatial CONUS dataset projected to given EPSG code.
+
+### `generate_tiles()`
+    Generate tiled spatial data from four tessellation/coverage options.
+
+    Args:
+      data: Spatial dataset to tessellate
+      tile_type: "square" - square coverage with "n = 70"
+                 "hexagonal" - hexagonal coverage with "n = 70"
+                 "voroni" - voroni tesselation
+                 "triangulate" - Delaunay triangulation
+                 none of the above - unmodified data
+    
+    Returns:
+      A spatial, tiled dataset from a given dataset and
+      tessellation/coverage type or unmodified data.
+
+### `plot_map()`
+    Plot spatial data using ggplot() + geom_sf().
+
+    Args:
+      data: Spatial dataset to plot.
+      title: Title shown on plot.
+      include_features: If TRUE, include caption of features collected.
+
+    Returns:
+      A plotted ggplot() map with, a white background,
+      navy border, size = 0.2, features collected, and given title.
+
+***
+
+```{r, warning = FALSE, message = FALSE}
+# Step 1.1
+conus_counties <- get_conus_spatial(USAboundaries::us_counties(), "state_name")
+
+# Step 1.2/1.3
+conus_square <- generate_tiles(conus_counties, "square")
+conus_hexagonal <- generate_tiles(conus_counties, "hexagonal")
+conus_voroni <- generate_tiles(conus_counties, "voroni")
+conus_triangulate <- generate_tiles(conus_counties, "triangulate")
+
+# Testing before Step 1.4/1.5
+```
+
+# Checking Plots {.tabset .tabset-pills .tabset-fade}
+```{r, results = 'asis', echo = FALSE}
+cat("## Square Coverage \n")
+plot.new()
+plot(conus_square, main = "")
+cat("\n\n")
+cat("## Hexagonal Coverage \n")
+plot.new()
+plot(conus_hexagonal, main = "")
+cat("\n\n")
+cat("## Voroni Tessellation \n")
+plot.new()
+plot(conus_voroni, main = "")
+cat("\n\n")
+cat("## Delaunay Triangulation \n")
+plot.new()
+plot(conus_triangulate, main = "")
+cat("\n\n")
+```
+
+***
+
+# Tidying Tessellations
+```{r, warning = FALSE, message = FALSE}
+conus_border <- st_union(conus_counties)
+conus_simple <- conus_border %>%
+    rmapshaper::ms_simplify(keep = 0.05)
+```
+
+One thing to notice about the data that we are going to perform analysis on, in particular the tessellated spatial datasets, is
+that we have a lot of surrounding excess data. The goal here with tidying these datasets is to create a *suitable* dataset for performing
+analysis on, and in this case, that means specifically CONUS representative data. The first thing we will do is to create a simplified border of CONUS:
+
+<div class='two-cols'>
+```{r, warning = FALSE, message = FALSE}
+ggplot() +
+    geom_sf(data = conus_border) +
+    theme_void() +
+    labs(subtitle = paste(
+                        "Unioned CONUS Points: ",
+                        mapview::npts(conus_border)
+                    )
+        )
+ggplot() +
+    geom_sf(data = conus_simple) +
+    theme_void() +
+    labs(subtitle = paste(
+                        "Simplified CONUS Points: ",
+                        mapview::npts(conus_simple)
+                    )
+        )
+```
+</div>
+
+By simplifying we were able to remove `r mapview::npts(conus_border)-mapview::npts(conus_simple) ` points, while still keeping roughly the same shape
+that we want. While it may seem that we do not want to lose data, for the analysis that we will be doing, a great amount of detail isn't necessary.
+Here, we want to visualize the *overlap* of our simplified CONUS border over our tessellations, so that we can see exactly what are trying to get rid of
+Note that, while the overlapping CONUS border *looks* like it is a `MULTILINESTRING`, it's really a `geom_sf()` with `fill = NA`.
+Now, notice the border excludes most of the excess data surrounding the tessellated spatial datasets that we do not need:
+
+<div class='two-cols'>
+```{r, warning = FALSE, message = FALSE, results = 'hold'}
+# Overlapping Plot with CONUS map to cut edges
+ggplot() +
+    geom_sf(data = conus_voroni, fill = NA) +
+    geom_sf(
+        data = conus_simple,
+        color = "green",
+        fill = NA) +
+        theme_void() +
+        labs(subtitle = paste(
+                            "Simplified CONUS Points: ",
+                            mapview::npts(conus_simple),
+                            "\n",
+                            "Voroni Tessellation Points: ",
+                            mapview::npts(conus_voroni)
+                       )
+            )
+# Overlapping Plot with CONUS map to cut edges
+ggplot() +
+    geom_sf(data = conus_triangulate, fill = NA) +
+    geom_sf(
+        data = conus_simple,
+        color = "green",
+        fill = NA) +
+        theme_void() +
+        labs(subtitle = paste(
+                            "Simplified CONUS Points: ",
+                            mapview::npts(conus_simple),
+                            "\n",
+                            "Delaunay Triangulation Points: ",
+                            mapview::npts(conus_triangulate)
+                       )
+            )
+```
+</div>
+
+Using `sf::st_intersection()`, we can get rid of the excess data. Using this function, we have the following spatial datasets:
+
+<div class='two-cols'>
+```{r, warning = FALSE, message = FALSE, results = 'hold'}
+# Plot tidied voroni
+conus_voroni_tidy <- st_intersection(conus_voroni, conus_simple)
+plot_map(
+    conus_voroni_tidy,
+    title = "Tidied Voroni Tessellation",
+    include_features = FALSE
+)
+# Plot tidied triangulation
+conus_triangulate_tidy <- st_intersection(conus_triangulate, conus_simple)
+plot_map(
+    conus_triangulate_tidy,
+    title = "Tidied Delaunay Triangulation",
+    include_features = FALSE
+)
+```
+</div>
+
+So, this gives us each spatial dataset that we will be using:
+
+# Spatial Datasets {.tabset .tabset-pills .tabset-fade}
+
+```{r, results = 'asis', echo = FALSE}
+cat("## Original \n")
+plot_map(conus_counties)
+cat("\n\n")
+cat("## Square Coverage \n")
+plot_map(conus_square)
+cat("\n\n")
+cat("## Hexagonal Coverage \n")
+plot_map(conus_hexagonal)
+cat("\n\n")
+cat("## Voroni Tessellation \n")
+plot_map(conus_voroni_tidy)
+cat("\n\n")
+cat("## Delaunay Triangulation \n")
+plot_map(conus_triangulate_tidy)
+cat("\n\n")
+```
