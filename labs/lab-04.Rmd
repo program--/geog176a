@@ -32,6 +32,8 @@ library(gghighlight)
 library(rmapshaper)
 library(mapview)
 library(viridis)
+library(leaflet)
+library(leafpop)
 ```
 
 ```{r, warning = FALSE, message = FALSE}
@@ -128,12 +130,14 @@ plot_map <- function(data, title = "", include_features = TRUE) {
         )
 }
 
-plot_map_pip <- function(data, title = "") {
+plot_map_pip <- function(data, title = "", highlight_sd_mean = FALSE) {
     # Plot simple features point-in-polygon data using ggplot() + geom_sf().
     #
     # Args:
     #   data: simple features point-in-polygon dataset to plot.
     #   title: Title shown on plot.
+    #   highlight_sd_mean: If TRUE, use gghighlight() to highlight
+    #                      the above mean count of points in a polygon.
     #
     # Returns:
     #   A plotted ggplot() map using viridis colour scale.
@@ -163,7 +167,12 @@ plot_map_pip <- function(data, title = "") {
         labs(
             title = title,
             caption = paste(sum(data$n), " dams")
-        )
+        ) + if (highlight_sd_mean) {
+            gghighlight(
+                    n > mean(data$n) + sd(data$n),
+                    unhighlighted_params = list(alpha = 0.5, col = NA, fill = "#d4d4d4")
+            )
+        }
 }
 
 compute_features <- function(sf_data, description) {
@@ -533,4 +542,91 @@ allows us to focus on the more specific locations of dams in relation to the cou
 
 **To directly see the difference in bias, compare the locations in the original and voronoi datasets to the square and hexagonal.**
 
-# Visualizing Dam Purposes across the US
+```{r, warning = FALSE, message = FALSE}
+# Flood Control
+us_dams_c <- us_dams %>%
+    filter(grepl("C", us_dams$PURPOSES))
+
+# Fire Protection
+us_dams_p <- us_dams %>%
+    filter(grepl("P", us_dams$PURPOSES))
+
+# Water Supply
+us_dams_s <- us_dams %>%
+    filter(grepl("S", us_dams$PURPOSES))
+
+# Hydroelectric
+us_dams_h <- us_dams %>%
+    filter(grepl("H", us_dams$PURPOSES))
+
+pip_square_c <- point_in_polygon(us_dams_c, conus_square, "id")
+pip_square_p <- point_in_polygon(us_dams_p, conus_square, "id")
+pip_square_s <- point_in_polygon(us_dams_s, conus_square, "id")
+pip_square_h <- point_in_polygon(us_dams_h, conus_square, "id")
+```
+# Visualizing Dam Purposes across the US {.tabset .tabset-pills .tabset-fade}
+
+```{r, results = 'asis', echo = FALSE}
+cat("## Flood Control (C) \n")
+plot_map_pip(pip_square_c, "Dams used for Flood Control", highlight_sd_mean = TRUE)
+cat("\n\n")
+cat("## Fire Protection (P) \n")
+plot_map_pip(pip_square_p, "Dams used for Fire Protection", highlight_sd_mean = TRUE)
+cat("\n\n")
+cat("## Water Supply (S) \n")
+plot_map_pip(pip_square_s, "Dams used for Water Supply", highlight_sd_mean = TRUE)
+cat("\n\n")
+cat("## Hydroelectric (H) \n")
+plot_map_pip(pip_square_h, "Dams used for Hydroelectricity", highlight_sd_mean = TRUE)
+cat("\n\n")
+```
+
+TODO, STEP 4.3
+
+# Analyzing Flood-risk Potential Dams
+```{r, warning = FALSE, message = FALSE}
+max_storage_states <- us_dams %>%
+    get_conus_spatial("STATE", abb = TRUE) %>%
+    select(RECORDID, DAM_NAME, COUNTY, HAZARD, NID_STORAGE, STATE, geometry) %>%
+    filter(HAZARD == "H") %>%
+    group_by(STATE) %>%
+    filter(NID_STORAGE == max(NID_STORAGE)) %>%
+    slice(1) %>%
+    ungroup() %>%
+    st_join(us_dams, by = "DAM_NAME", left = TRUE, join = st_equals) %>%
+    st_transform("+proj=longlat +datum=WGS84")
+
+river_systems <- read_sf("labs/data/MajorRivers/MajorRivers.shp")
+m_river_system <- filter(river_systems, SYSTEM == "Mississippi")
+
+leaflet(max_storage_states) %>%
+    addTiles() %>%
+    addCircleMarkers(
+        radius = ~NID_STORAGE.x / 1500000,
+        color = "red",
+        stroke = FALSE,
+        fillOpacity = 1,
+        popup = leafpop::popupTable(
+            setNames(
+                st_drop_geometry(
+                    select(
+                        max_storage_states,
+                        DAM_NAME.x,
+                        NID_STORAGE.x,
+                        PURPOSES,
+                        YEAR_COMPLETED
+                    )
+                ),
+                c("Dam Name", "Storage", "Purposes", "Year Completed")
+            ),
+            row.numbers = FALSE,
+            feature.id = FALSE
+        )
+    ) %>%
+    addPolylines(
+        data = m_river_system,
+        color = "#294adb",
+        weight = 1.5,
+        smoothFactor = 0.5
+    )
+```
