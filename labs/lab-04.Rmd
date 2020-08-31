@@ -22,6 +22,7 @@ output:
 # SPDS
 library(tidyverse)
 library(sf)
+library(units)
 
 # Data
 library(USAboundaries)
@@ -30,11 +31,10 @@ library(USAboundaries)
 library(gghighlight)
 library(rmapshaper)
 library(mapview)
+library(viridis)
 ```
 
 ```{r, warning = FALSE, message = FALSE}
-# Function Definitions
-
 get_conus_spatial <- function(data, var, proj = 5070, abb = FALSE) {
     # Filter CONUS from a spatial US dataset and modify its projection.
     #
@@ -66,7 +66,7 @@ generate_tiles <- function(data, tile_type = TRUE) {
     #   data: Spatial dataset to tesselate
     #   tile_type: "square" - square coverage with "n = 70"
     #              "hexagonal" - hexagonal coverage with "n = 70"
-    #              "voroni" - voroni tesselation
+    #              "voronoi" - voronoi tesselation
     #              "triangulate" - Delaunay triangulation
     #              none of the above - unmodified data
     #
@@ -78,7 +78,7 @@ generate_tiles <- function(data, tile_type = TRUE) {
         tiled_data <- sf::st_make_grid(data, n = 70)
     } else if (tile_type == "hexagonal") {
         tiled_data <- sf::st_make_grid(data, n = 70, square = FALSE)
-    } else if (tile_type == "voroni") {
+    } else if (tile_type == "voronoi") {
         tiled_data <- sf::st_centroid(data) %>%
             sf::st_combine() %>%
             sf::st_voronoi() %>%
@@ -127,11 +127,98 @@ plot_map <- function(data, title = "", include_features = TRUE) {
             }
         )
 }
+
+plot_map_pip <- function(data, title = "") {
+    # Plot simple features point-in-polygon data using ggplot() + geom_sf().
+    #
+    # Args:
+    #   data: simple features point-in-polygon dataset to plot.
+    #   title: Title shown on plot.
+    #
+    # Returns:
+    #   A plotted ggplot() map using viridis colour scale.
+
+    ggplot() +
+        geom_sf(
+            data = data,
+            aes(fill = n),
+            size = 0.2,
+            col = NA
+        ) +
+        scale_fill_viridis(
+            option = "plasma",
+            name = "Number of Dams",
+            guide = guide_colorbar(
+                direction = "horizontal",
+                barheight = unit(2, units = "mm"),
+                barwidth = unit(50, units = "mm"),
+                draw.ulim = F,
+                title.position = "top",
+                title.hjust = 0.5,
+                label.hjust = 0.5
+            )
+        ) +
+        theme_void() +
+        theme(legend.position = "bottom") +
+        labs(
+            title = title,
+            caption = paste(sum(data$n), " dams")
+        )
+}
+
+compute_features <- function(sf_data, description) {
+    # Compute calculations on a "sf" object.
+    #
+    # Args:
+    #   sf_data: A simple features object.
+    #   description: A description of the data frame output.
+    #
+    # Returns:
+    #   A data frame with "description" as the first column, and following,
+    #   the number of features, mean area of the "sf" object, standard deviation
+    #   of the area, and total area.
+
+    features_area <- sf::st_area(sf_data) %>%
+        set_units("km^2") %>%
+        drop_units()
+
+    output <- data.frame(
+        DESCRIPTION = description,
+        NUM_FEATURES = count(sf_data),
+        MEAN_AREA = mean(features_area),
+        STANDARD_DEV = sd(features_area),
+        TOTAL_AREA = sum(features_area)
+    )[-3]
+
+    colnames(output)[2] <- "NUM_FEATURES" # Remove ".n" from col name
+
+    return(output)
+}
+
+point_in_polygon <- function(points, polygon, compare) {
+    # Performs point-in-polygon computation via a given column.
+    #
+    # Args:
+    #   points: A spatial dataset of points.
+    #   polygon: A spatial dataset of polygons.
+    #   compare: The column from polygons to count the number
+    #            of points in.
+    #
+    # Returns:
+    #   A spatial dataset of two columns counting the points in any
+    #   given polygon.
+    st_join(polygon, points) %>%
+        st_drop_geometry() %>%
+        count(get(compare)) %>%
+        setNames(c(compare, "n")) %>%
+        left_join(polygon, by = compare) %>%
+        st_as_sf()
+}
 ```
 
 # Function Definitions
 
-For explicit function code, click the above "Code" button.
+For explicit function code, click the above `CODE` button.
 
 ### `get_conus_spatial()`
     Filter CONUS from a spatial US dataset and modify its projection.
@@ -153,7 +240,7 @@ For explicit function code, click the above "Code" button.
       data: Spatial dataset to tessellate
       tile_type: "square" - square coverage with "n = 70"
                  "hexagonal" - hexagonal coverage with "n = 70"
-                 "voroni" - voroni tesselation
+                 "voronoi" - voronoi tesselation
                  "triangulate" - Delaunay triangulation
                  none of the above - unmodified data
     
@@ -173,6 +260,40 @@ For explicit function code, click the above "Code" button.
       A plotted ggplot() map with, a white background,
       navy border, size = 0.2, features collected, and given title.
 
+### `plot_map_pip()`
+    Plot simple features point-in-polygon data using ggplot() + geom_sf().
+
+    Args:
+      data: simple features point-in-polygon dataset to plot.
+      title: Title shown on plot.
+
+    Returns:
+      A plotted ggplot() map using viridis colour scale.
+
+### `compute_features()`
+    Compute calculations on a "sf" object.
+
+    Args:
+      sf_data: A simple features object.
+      description: A description of the data frame output.
+    
+    Returns:
+      A data frame with "description" as the first column, and following,
+      the number of features, mean area of the "sf" object, standard deviation
+      of the area, and total area.
+
+### `point_in_polygon()`
+    Performs point-in-polygon computation via a given column.
+    
+    Args:
+      points: A spatial dataset of points.
+      polygon: A spatial dataset of polygons.
+      compare: The column from polygons to count the number
+               of points in.
+
+    Returns:
+      A spatial dataset of two columns counting the points in any
+      given polygon.
 ***
 
 ```{r, warning = FALSE, message = FALSE}
@@ -182,7 +303,7 @@ conus_counties <- get_conus_spatial(USAboundaries::us_counties(), "state_name")
 # Step 1.2/1.3
 conus_square <- generate_tiles(conus_counties, "square")
 conus_hexagonal <- generate_tiles(conus_counties, "hexagonal")
-conus_voroni <- generate_tiles(conus_counties, "voroni")
+conus_voronoi <- generate_tiles(conus_counties, "voronoi")
 conus_triangulate <- generate_tiles(conus_counties, "triangulate")
 
 # Testing before Step 1.4/1.5
@@ -198,9 +319,9 @@ cat("## Hexagonal Coverage \n")
 plot.new()
 plot(conus_hexagonal, main = "")
 cat("\n\n")
-cat("## Voroni Tessellation \n")
+cat("## voronoi Tessellation \n")
 plot.new()
-plot(conus_voroni, main = "")
+plot(conus_voronoi, main = "")
 cat("\n\n")
 cat("## Delaunay Triangulation \n")
 plot.new()
@@ -226,6 +347,7 @@ analysis on, and in this case, that means specifically CONUS representative data
 ggplot() +
     geom_sf(data = conus_border) +
     theme_void() +
+        theme_void() +
     labs(subtitle = paste(
                         "Unioned CONUS Points: ",
                         mapview::npts(conus_border)
@@ -252,7 +374,7 @@ Now, notice the border excludes most of the excess data surrounding the tessella
 ```{r, warning = FALSE, message = FALSE, results = 'hold'}
 # Overlapping Plot with CONUS map to cut edges
 ggplot() +
-    geom_sf(data = conus_voroni, fill = NA) +
+    geom_sf(data = conus_voronoi, fill = NA) +
     geom_sf(
         data = conus_simple,
         color = "green",
@@ -262,8 +384,8 @@ ggplot() +
                             "Simplified CONUS Points: ",
                             mapview::npts(conus_simple),
                             "\n",
-                            "Voroni Tessellation Points: ",
-                            mapview::npts(conus_voroni)
+                            "voronoi Tessellation Points: ",
+                            mapview::npts(conus_voronoi)
                        )
             )
 # Overlapping Plot with CONUS map to cut edges
@@ -289,11 +411,11 @@ Using `sf::st_intersection()`, we can get rid of the excess data. Using this fun
 
 <div class='two-cols'>
 ```{r, warning = FALSE, message = FALSE, results = 'hold'}
-# Plot tidied voroni
-conus_voroni_tidy <- st_intersection(conus_voroni, conus_simple)
+# Plot tidied voronoi
+conus_voronoi_tidy <- st_intersection(conus_voronoi, conus_simple)
 plot_map(
-    conus_voroni_tidy,
-    title = "Tidied Voroni Tessellation",
+    conus_voronoi_tidy,
+    title = "Tidied voronoi Tessellation",
     include_features = FALSE
 )
 # Plot tidied triangulation
@@ -312,18 +434,103 @@ So, this gives us each spatial dataset that we will be using:
 
 ```{r, results = 'asis', echo = FALSE}
 cat("## Original \n")
-plot_map(conus_counties)
+plot_map(conus_counties, "Original US Counties")
 cat("\n\n")
 cat("## Square Coverage \n")
-plot_map(conus_square)
+plot_map(conus_square, "Square Coverage")
 cat("\n\n")
 cat("## Hexagonal Coverage \n")
-plot_map(conus_hexagonal)
+plot_map(conus_hexagonal, "Hexagonal Coverage")
 cat("\n\n")
-cat("## Voroni Tessellation \n")
-plot_map(conus_voroni_tidy)
+cat("## voronoi Tessellation \n")
+plot_map(conus_voronoi_tidy, "voronoi Tessellation")
 cat("\n\n")
 cat("## Delaunay Triangulation \n")
-plot_map(conus_triangulate_tidy)
+plot_map(conus_triangulate_tidy, "Delaunay Triangulation")
 cat("\n\n")
 ```
+
+# Features Computations
+
+```{r, warning = FALSE, message = FALSE, results = 'hold'}
+feature_summary <- bind_rows(
+    compute_features(conus_counties, "US Counties"),
+    compute_features(conus_square, "Square Coverage"),
+    compute_features(conus_hexagonal, "Hexagonal Coverage"),
+    compute_features(conus_voronoi_tidy, "voronoi Tessellation"),
+    compute_features(conus_triangulate_tidy, "Delaunay Triangulation")
+)
+
+knitr::kable(
+    feature_summary,
+    col.names = c(
+        "Description",
+        "Number of Features",
+        "Area Mean",
+        "Area Standard Deviation",
+        "Total Area"
+    ),
+    caption = "Tessellation Features Data"
+) %>%
+    kableExtra::kable_styling(
+        bootstrap_options = c("striped", "hover"),
+        full_width = F,
+        position = "center",
+    ) %>%
+    kableExtra::column_spec(
+        2,
+        color = kableExtra::spec_color(feature_summary$NUM_FEATURES, end = 0.75, option = "C", direction = -1)
+    ) %>%
+    kableExtra::column_spec(
+        5,
+        color = kableExtra::spec_color(feature_summary$TOTAL_AREA, end = 0.75, option = "C", direction = -1)
+    )
+```
+When we analyze these tessellations, some important information needs to be taken into account. From the **Tessellation Features Data** table,
+we can observe a few different attributes, such as: *number of features*, *mean of feature areas*, *standard deviation of feature areas*, and the *total area*.
+The importance of this data relates to the modifiable areal unit problem and inherent statistical bias; for example, consider the original dataset versus the
+other tessellations. When the original dataset is tessellated, there is a potential loss of accuracy with point-in-polygon analysis, as points may potentially fall
+into differing areas with the tessellated datasets. However, the tradeoffs for accuracy come with computation. Take hexagonal coverage versus Delaunay triangulation
+for example. Since hexagonal coverage has a significantly smaller number of features than Delaunay triangulation, the efficiency of computing point-in-polygon analysis
+would be much faster. Although, depending on the time complexity of the method used for computing the analysis, this may not be as much of an issue (i.e. $O(n)$ versus $O(\log(n))$).
+
+```{r, warning = FALSE, message = FALSE, results = 'hold'}
+us_dams <- readxl::read_excel("data/NID2019_U.xlsx") %>%
+    filter(!is.na(LONGITUDE), !is.na(LATITUDE)) %>%
+    st_as_sf(coords = c("LONGITUDE", "LATITUDE"), crs = 4326) %>%
+    st_transform(5070)
+
+pip_counties <- point_in_polygon(us_dams, conus_counties, "geoid")
+pip_square <- point_in_polygon(us_dams, conus_square, "id")
+pip_hexagonal <- point_in_polygon(us_dams, conus_hexagonal, "id")
+pip_voronoi <- point_in_polygon(us_dams, conus_voronoi_tidy, "id")
+pip_delaunay <- point_in_polygon(us_dams, conus_triangulate_tidy, "id")
+```
+
+# Point-in-Polygon Analysis of Tessellations {.tabset .tabset-pills .tabset-fade}
+
+```{r, results = 'asis', echo = FALSE}
+cat("## Original \n")
+plot_map_pip(pip_counties, "PIP with Original US Counties")
+cat("\n\n")
+cat("## Square Coverage \n")
+plot_map_pip(pip_square, "PIP with Square Coverage")
+cat("\n\n")
+cat("## Hexagonal Coverage \n")
+plot_map_pip(pip_hexagonal, "PIP with Hexagonal Coverage")
+cat("\n\n")
+cat("## voronoi Tessellation \n")
+plot_map_pip(pip_voronoi, "PIP with voronoi Tessellation")
+cat("\n\n")
+cat("## Delaunay Triangulation \n")
+plot_map_pip(pip_delaunay, "PIP with Delaunay Triangulation")
+cat("\n\n")
+```
+
+Moving forward, we will focus on the **square coverage**, as this provides an accurate, non-biased visualization of
+dam locations. Primarily, it removes the concept of county lines -- which are susceptible to statistical bias *(MUAP)* -- and
+allows us to focus on the more specific locations of dams in relation to the country as a whole (as opposed to in relation to counties).
+
+**To directly see the difference in bias, compare the locations in the original and voronoi datasets to the square and hexagonal.**
+
+# Visualizing Dam Purposes across the US
