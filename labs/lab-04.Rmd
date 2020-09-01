@@ -275,6 +275,8 @@ For explicit function code, click the above `CODE` button.
     Args:
       data: simple features point-in-polygon dataset to plot.
       title: Title shown on plot.
+      highlight_sd_mean: If TRUE, use gghighlight() to highlight
+                         the above mean count of points in a polygon.
 
     Returns:
       A plotted ggplot() map using viridis colour scale.
@@ -497,9 +499,12 @@ knitr::kable(
 ```
 When we analyze these tessellations, some important information needs to be taken into account. From the **Tessellation Features Data** table,
 we can observe a few different attributes, such as: *number of features*, *mean of feature areas*, *standard deviation of feature areas*, and the *total area*.
+
 The importance of this data relates to the modifiable areal unit problem and inherent statistical bias; for example, consider the original dataset versus the
 other tessellations. When the original dataset is tessellated, there is a potential loss of accuracy with point-in-polygon analysis, as points may potentially fall
-into differing areas with the tessellated datasets. However, the tradeoffs for accuracy come with computation. Take hexagonal coverage versus Delaunay triangulation
+into differing areas with the tessellated datasets. However, the tradeoffs for accuracy come with computation. 
+
+Take hexagonal coverage versus Delaunay triangulation
 for example. Since hexagonal coverage has a significantly smaller number of features than Delaunay triangulation, the efficiency of computing point-in-polygon analysis
 would be much faster. Although, depending on the time complexity of the method used for computing the analysis, this may not be as much of an issue (i.e. $O(n)$ versus $O(\log(n))$).
 
@@ -535,6 +540,8 @@ cat("## Delaunay Triangulation \n")
 plot_map_pip(pip_delaunay, "PIP with Delaunay Triangulation")
 cat("\n\n")
 ```
+
+# {.toc-ignore}
 
 Moving forward, we will focus on the **square coverage**, as this provides an accurate, non-biased visualization of
 dam locations. Primarily, it removes the concept of county lines -- which are susceptible to statistical bias *(MUAP)* -- and
@@ -581,7 +588,16 @@ plot_map_pip(pip_square_h, "Dams used for Hydroelectricity", highlight_sd_mean =
 cat("\n\n")
 ```
 
-TODO, STEP 4.3
+# {.toc-ignore}
+
+Using a square tessellation allows for a greater accuracy of analyzing geographic distribution of dams in relation to environmental concerns,
+such as river systems and climate. 
+
+For example, when looking at dams for **Water Supply (S)**, the greater average of dams are located in areas
+that require a higher need for water, either as a result from drought or irrigation *(i.e. California)*. 
+
+Then, when thinking in terms of
+river systems, we can analyze the flood-risk for dams that intersect with the Mississippi river system. See below for an example.
 
 # Analyzing Flood-risk Potential Dams
 ```{r, warning = FALSE, message = FALSE}
@@ -596,16 +612,17 @@ max_storage_states <- us_dams %>%
     st_join(us_dams, by = "DAM_NAME", left = TRUE, join = st_equals) %>%
     st_transform("+proj=longlat +datum=WGS84")
 
-river_systems <- read_sf("labs/data/MajorRivers/MajorRivers.shp")
+river_systems <- read_sf("data/MajorRivers/MajorRivers.shp")
 m_river_system <- filter(river_systems, SYSTEM == "Mississippi")
 
 leaflet(max_storage_states) %>%
     addTiles() %>%
     addCircleMarkers(
-        radius = ~NID_STORAGE.x / 1500000,
+        radius = (~NID_STORAGE.x / 1500000),
         color = "red",
         stroke = FALSE,
         fillOpacity = 1,
+        clusterOptions = markerClusterOptions(),
         popup = leafpop::popupTable(
             setNames(
                 st_drop_geometry(
