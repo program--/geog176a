@@ -330,7 +330,7 @@ cat("## Hexagonal Coverage \n")
 plot.new()
 plot(conus_hexagonal, main = "")
 cat("\n\n")
-cat("## voronoi Tessellation \n")
+cat("## Voronoi Tessellation \n")
 plot.new()
 plot(conus_voronoi, main = "")
 cat("\n\n")
@@ -395,7 +395,7 @@ ggplot() +
                             "Simplified CONUS Points: ",
                             mapview::npts(conus_simple),
                             "\n",
-                            "voronoi Tessellation Points: ",
+                            "Voronoi Tessellation Points: ",
                             mapview::npts(conus_voronoi)
                        )
             )
@@ -426,7 +426,7 @@ Using `sf::st_intersection()`, we can get rid of the excess data. Using this fun
 conus_voronoi_tidy <- st_intersection(conus_voronoi, conus_simple)
 plot_map(
     conus_voronoi_tidy,
-    title = "Tidied voronoi Tessellation",
+    title = "Tidied Voronoi Tessellation",
     include_features = FALSE
 )
 # Plot tidied triangulation
@@ -454,7 +454,7 @@ cat("## Hexagonal Coverage \n")
 plot_map(conus_hexagonal, "Hexagonal Coverage")
 cat("\n\n")
 cat("## voronoi Tessellation \n")
-plot_map(conus_voronoi_tidy, "voronoi Tessellation")
+plot_map(conus_voronoi_tidy, "Voronoi Tessellation")
 cat("\n\n")
 cat("## Delaunay Triangulation \n")
 plot_map(conus_triangulate_tidy, "Delaunay Triangulation")
@@ -468,7 +468,7 @@ feature_summary <- bind_rows(
     compute_features(conus_counties, "US Counties"),
     compute_features(conus_square, "Square Coverage"),
     compute_features(conus_hexagonal, "Hexagonal Coverage"),
-    compute_features(conus_voronoi_tidy, "voronoi Tessellation"),
+    compute_features(conus_voronoi_tidy, "Voronoi Tessellation"),
     compute_features(conus_triangulate_tidy, "Delaunay Triangulation")
 )
 
@@ -533,8 +533,8 @@ cat("\n\n")
 cat("## Hexagonal Coverage \n")
 plot_map_pip(pip_hexagonal, "PIP with Hexagonal Coverage")
 cat("\n\n")
-cat("## voronoi Tessellation \n")
-plot_map_pip(pip_voronoi, "PIP with voronoi Tessellation")
+cat("## Voronoi Tessellation \n")
+plot_map_pip(pip_voronoi, "PIP with Voronoi Tessellation")
 cat("\n\n")
 cat("## Delaunay Triangulation \n")
 plot_map_pip(pip_delaunay, "PIP with Delaunay Triangulation")
