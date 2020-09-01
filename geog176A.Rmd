@@ -23,3 +23,9 @@ In the summer of 2020 I took a class GIS course based in R. I wrote some code, a
   - Gathered spatial data about US cities and their relation to national borders using **tidyverse** and **sf** libraries.
   - Used **gghighlight** and **ggplot2** to visualize spatial data, and **sf** to calculate distances.
   - Analyzed controversial Federal Agencies' claims based on an [ACLU article](https://www.aclu.org/other/constitution-100-mile-border-zone) to verify statistics given.
+
+## [`r fa("cubes")` Point-in-Polygon Analysis with Tessellations](https://geog176a.justinsingh.me/labs/lab-04)
+
+  - Generated and analyzed **tessellated spatial datasets**, such as: *square* and *hexagonal coverages*, *Voronoi tessellations*, and *Delaunay triangulation*.
+  - Performed **point-in-polygon** analysis using US Dams dataset from US Army Corps of Engineers.
+  - Created a **leaflet** interactive map to analyze dams at risk for floods along the Mississippi river system.
