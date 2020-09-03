@@ -1,0 +1,216 @@
+---
+title: "Geography 176A"
+author: "[Justin Singh-M.](https://geog176a.justinsingh.me)"
+subtitle: 'Lab 04: Rasters & Remote Sensing'
+output:
+  html_document:
+    theme: sandstone
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+<style>
+  .two-cols {
+    columns: 2;         /* number of columns and width in pixels*/
+    -webkit-columns: 2; /* chrome, safari */
+    -moz-columns: 2;    /* firefox */
+  }
+</style>
+
+```{r setup, include = FALSE}
+library(raster) # Raster Data handling
+library(tidyverse) # Data Manipulation
+library(getlandsat) # keyless Landsat data (2013-2017)
+library(sf) # Vector data processing
+library(mapview) # Rapid Interactive visualization
+```
+
+```{r, warning = FALSE, message = FALSE}
+threshold <- function(x, condition = 0, comparator = "<") {
+
+        if (comparator == ">") {
+            ifelse(x > condition, return(1), return(0))
+        } else if (comparator == ">=") {
+            ifelse(x >= condition, return(1), return(0))
+        } else if (comparator == "<=") {
+            ifelse(x <= condition, return(1), return(0))
+        } else if (comparator == "<") {
+            ifelse(x < condition, return(1), return(0))
+        } else if (comparator == "==") {
+            ifelse(x == condition, return(1), return(0))
+        } else if (comparator == "!=") {
+            ifelse(x != condition, return(1), return(0))
+        } else {
+            return(FALSE)
+        }
+
+}
+
+threshold_less_than_five <- function(x) {
+    return(threshold(x, condition = 5, comparator = "<"))
+}
+
+threshold_less_than_zero <- function(x) {
+    return(threshold(x, condition = 0, comparator = "<"))
+}
+
+threshold_greater_than_zero <- function(x) {
+    return(threshold(x, condition = 0, comparator = ">"))
+}
+
+threshold_greater_than_one <- function(x) {
+    return(threshold(x, condition = 1, comparator = ">"))
+}
+
+is_NA <- function(x) {
+    ifelse(is.na(x) || is.nan(x), return(0), return(x))
+}
+```
+
+```{r, warning = FALSE, message = FALSE}
+# Question 1
+palo <- readr::read_csv("data/uscities.csv") %>%
+    st_as_sf(coords = c("lng", "lat"), crs = 4326) %>%
+    filter(city == "Palo", state_name == "Iowa") %>%
+    st_transform(5070)
+
+palo_bbox <- palo %>%
+    st_buffer(5000) %>%
+    st_bbox() %>%
+    st_as_sfc() %>%
+    st_as_sf()
+
+# Question 2.2 (src: R/scenes.R)
+# To build the palo-flood-scene.csv, uncomment below:
+# source("R/scenes.R")
+
+# palo_scene <- readr::read_csv("data/palo-flood-scene.csv")[1,]$download_url %>%
+#     lsat_scene_files()
+
+# palo_scene_urls <- palo_scene %>%
+#     filter(grepl(paste0('B', 1:6, ".TIF$", collapse = "|"), palo_scene$file)) %>%
+#     arrange(file) %>%
+#     pull(file)
+
+# Question 2.3
+
+# lsat_image() was not working for me due to a partition error/encryption
+# in my HDD, which gave me the error "Invalid cross-device link" when
+# file.rename() was called. So, I worked around this by manually
+# downloading the *.TIF files via `wget` into the ~/.cache/landsat-pds/...
+# directory (In Fedora).
+# st <- sapply(palo_scene_urls, lsat_image)
+
+# This results in *.TIF files still being recognized in the cache:
+st <- lsat_cache_list()
+
+bands <- stack(st) %>%
+    setNames(paste0("band", 1:6))
+
+bands_crop <- bands %>%
+    crop(st_transform(palo_bbox,"+proj=utm +zone=15 +datum=WGS84 +units=m +no_defs"))
+
+bands_crop <- setNames(bands_crop, c("Coastal", "Blue", "Green", "Red", "NIR", "SWIR 1"))
+```
+# Landsat Band Attributes
+
+<div class='two-cols'>
+The attributes of our **stacked** bands are given as,
+`r options(scipen=999)`
+- **nrow():** `r formatC(nrow(bands), format = "f", big.mark = ",", digits = 0)`
+- **ncol():** `r formatC(ncol(bands), format = "f", big.mark = ",", digits = 0)`
+- **ncell():** `r formatC(ncell(bands), format = "f", big.mark = ",", digits = 0)`
+- **nlayers():** `r nlayers(bands)`
+- **CRS:** ``r as.character(crs(bands))``
+- **Resolution:** `r paste0(res(bands)[1], " x ", res(bands)[2])`
+
+The attributes of our **cropped** bands are given as,
+`r options(scipen=999)`
+- **nrow():** `r formatC(nrow(bands_crop), format = "f", big.mark = ",", digits = 0)`
+- **ncol():** `r formatC(ncol(bands_crop), format = "f", big.mark = ",", digits = 0)`
+- **ncell():** `r formatC(ncell(bands_crop), format = "f", big.mark = ",", digits = 0)`
+- **nlayers():** `r nlayers(bands_crop)`
+- **CRS:** ``r as.character(crs(bands_crop))``
+- **Resolution:** `r paste0(res(bands_crop)[1], " x ", res(bands_crop)[2])`
+</div>
+
+# Plotting Bands & Applying Stretches {.tabset .tabset-pills .tabset-fade}
+```{r, results = 'asis', echo = FALSE, warning = FALSE, message = FALSE}
+cat("## RGB (4,3,2) \n")
+cat("<div class='two-cols'> \n")
+plotRGB(bands_crop, r = 4, g = 3, b = 2)
+plotRGB(bands_crop, r = 4, g = 3, b = 2, stretch = "hist")
+cat("</div> \n")
+cat("\n\n")
+cat("## Traditional Color Infrared (5,4,3) \n")
+cat("<div class='two-cols'> \n")
+plotRGB(bands_crop, r = 5, g = 4, b = 3)
+plotRGB(bands_crop, r = 5, g = 4, b = 3, stretch = "hist")
+cat("</div> \n")
+cat("\n\n")
+cat("## False Color, Water Focus (5,6,4) \n")
+cat("<div class='two-cols'> \n")
+plotRGB(bands_crop, r = 5, g = 6, b = 4)
+plotRGB(bands_crop, r = 5, g = 6, b = 4, stretch = "hist")
+cat("</div> \n")
+cat("\n\n")
+cat("## False Color, Agriculture Focus (6,5,2) \n")
+cat("<div class='two-cols'> \n")
+plotRGB(bands_crop, r = 6, g = 5, b = 2)
+plotRGB(bands_crop, r = 6, g = 5, b = 2, stretch = "hist")
+cat("</div> \n")
+cat("\n\n")
+```
+# {.toc-ignore}
+# Why Stretch?
+Stretching in this case is a way of increasing clarity by normalizing the distribution of brightness across a raster.
+In general, these diagrams from [NeonScience](https://www.neonscience.org/dc-multiband-rasters-r) display the general concept behind stretching:
+
+<div class='two-cols'>
+![Darker](https://www.neonscience.org/sites/default/files/images/dc-spatial-raster/imageStretch_dark.jpg)
+![Lighter](https://www.neonscience.org/sites/default/files/images/dc-spatial-raster/imageStretch_light.jpg)
+</div>
+
+When stretching, there are two methods: *Linear* or *Histogram*. Linear is the method shown in the diagrams above, where points are taken and linearly scaled.
+Histogram stretching occurs conceptually by stretching the ends of the *intesity* (brightness/contrast) of a raster:
+![Histogram](http://what-when-how.com/wp-content/uploads/2012/07/tmp26dc99.png)
+
+```{r, warning = FALSE, message = FALSE}
+NVDI <- (bands_crop[[5, ]] - bands_crop[[4, ]]) / (bands_crop[[5, ]] + bands_crop[[4, ]])
+NVDI_mask <- calc(NVDI, threshold_less_than_zero) %>%
+    calc(is_NA)
+
+NDWI <- (bands_crop[[3, ]] - bands_crop[[5, ]]) / (bands_crop[[3, ]] + bands_crop[[5, ]])   
+NDWI_mask <- calc(NDWI, threshold_greater_than_zero) %>%
+    calc(is_NA)
+
+MNDWI <- (bands_crop[[3, ]] - bands_crop[[6, ]]) / (bands_crop[[3, ]] + bands_crop[[6, ]])
+MNDWI_mask <- calc(MNDWI, threshold_greater_than_zero) %>%
+    calc(is_NA)
+
+WRI <- (bands_crop[[3, ]] + bands_crop[[4, ]]) / (bands_crop[[5, ]] + bands_crop[[6, ]])
+WRI_mask <- calc(WRI, threshold_greater_than_one) %>%
+    calc(is_NA)
+
+SWI <- (1 / (bands_crop[[2, ]] - bands_crop[[6, ]])^0.5) %>%
+    calc(is_NA)
+SWI_mask <- calc(SWI, threshold_less_than_five) %>%
+    calc(is_NA)
+
+water_features <- stack(c(NVDI, NDWI, MNDWI, WRI, SWI)) %>%
+    setNames(c("NVDI", "NDWI", "MNDWI", "WRI", "SWI"))
+plot(water_features, col = colorRampPalette(c("blue", "white", "red"))(256))
+water_features_mask <- stack(c(NVDI_mask, NDWI_mask, MNDWI_mask, WRI_mask, SWI_mask)) %>%
+    setNames(c("NVDI", "NDWI", "MNDWI", "WRI", "SWI"))
+plot(water_features_mask, col = colorRampPalette(c("white", "blue"))(256))
+```
+
+```{r, warning = FALSE, message = FALSE}
+set.seed(123456)
+kmeans_floods <- getValues(water_features_mask) %>%
+    na.omit() %>%
+    kmeans(10)
+
+kmeans_raster <- water_features$NVDI
+values(kmeans_raster) <- kmeans_floods$cluster
+```
