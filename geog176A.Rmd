@@ -29,3 +29,9 @@ In the summer of 2020 I took a class GIS course based in R. I wrote some code, a
   - Generated and analyzed **tessellated spatial datasets**, such as: *square* and *hexagonal coverages*, *Voronoi tessellations*, and *Delaunay triangulation*.
   - Performed **point-in-polygon** analysis using US Dams dataset from US Army Corps of Engineers.
   - Created a **leaflet** interactive map to analyze dams at risk for floods along the Mississippi river system.
+  
+## [`r fa_object_group()` Flood Analysis using Remote Sensing](https://geog176a.justinsingh.me/labs/lab-05)
+
+  - Using **Landsat Data**, generated **rasters** and computed band combinations for surface water features.
+  - Utilized statistical methods, namely **k-means clustering** to highlight potential flood areas.
+  - Applied flood data to visually identify at-risk areas using **leaflet/mapview**.

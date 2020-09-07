@@ -26,6 +26,7 @@ library(mapview) # Rapid Interactive visualization
 ```
 
 ```{r, warning = FALSE, message = FALSE}
+# Functions
 threshold <- function(x, condition = 0, comparator = "<") {
 
         if (comparator == ">") {
@@ -43,9 +44,11 @@ threshold <- function(x, condition = 0, comparator = "<") {
         } else {
             return(FALSE)
         }
-
 }
 
+threshold_equal_to_three <- function(x) {
+  return(threshold(x, condition = 3, comparator = "=="))
+}
 threshold_less_than_five <- function(x) {
     return(threshold(x, condition = 5, comparator = "<"))
 }
@@ -65,9 +68,10 @@ threshold_greater_than_one <- function(x) {
 is_NA <- function(x) {
     ifelse(is.na(x) || is.nan(x), return(0), return(x))
 }
-```
+zero_to_NA <- function(x) {
+    ifelse(x != 0, return(x), return(NA))
+}
 
-```{r, warning = FALSE, message = FALSE}
 # Question 1
 palo <- readr::read_csv("data/uscities.csv") %>%
     st_as_sf(coords = c("lng", "lat"), crs = 4326) %>%
@@ -85,12 +89,12 @@ palo_bbox <- palo %>%
 # source("R/scenes.R")
 
 # palo_scene <- readr::read_csv("data/palo-flood-scene.csv")[1,]$download_url %>%
-#     lsat_scene_files()
+#   lsat_scene_files()
 
 # palo_scene_urls <- palo_scene %>%
-#     filter(grepl(paste0('B', 1:6, ".TIF$", collapse = "|"), palo_scene$file)) %>%
-#     arrange(file) %>%
-#     pull(file)
+#    filter(grepl(paste0('B', 1:6, ".TIF$", collapse = "|"), palo_scene$file)) %>%
+#    arrange(file) %>%
+#    pull(file)
 
 # Question 2.3
 
@@ -104,38 +108,42 @@ palo_bbox <- palo %>%
 # This results in *.TIF files still being recognized in the cache:
 st <- lsat_cache_list()
 
+# Question 2.3
 bands <- stack(st) %>%
     setNames(paste0("band", 1:6))
 
+# Question 2.4
 bands_crop <- bands %>%
     crop(st_transform(palo_bbox,"+proj=utm +zone=15 +datum=WGS84 +units=m +no_defs"))
 
 bands_crop <- setNames(bands_crop, c("Coastal", "Blue", "Green", "Red", "NIR", "SWIR 1"))
+
 ```
 # Landsat Band Attributes
 
 <div class='two-cols'>
 The attributes of our **stacked** bands are given as,
 `r options(scipen=999)`
-- **nrow():** `r formatC(nrow(bands), format = "f", big.mark = ",", digits = 0)`
-- **ncol():** `r formatC(ncol(bands), format = "f", big.mark = ",", digits = 0)`
-- **ncell():** `r formatC(ncell(bands), format = "f", big.mark = ",", digits = 0)`
-- **nlayers():** `r nlayers(bands)`
+- **Rows:** `r formatC(nrow(bands), format = "f", big.mark = ",", digits = 0)`
+- **Columns:** `r formatC(ncol(bands), format = "f", big.mark = ",", digits = 0)`
+- **Cells:** `r formatC(ncell(bands), format = "f", big.mark = ",", digits = 0)`
+- **Layers:** `r nlayers(bands)`
 - **CRS:** ``r as.character(crs(bands))``
 - **Resolution:** `r paste0(res(bands)[1], " x ", res(bands)[2])`
 
 The attributes of our **cropped** bands are given as,
 `r options(scipen=999)`
-- **nrow():** `r formatC(nrow(bands_crop), format = "f", big.mark = ",", digits = 0)`
-- **ncol():** `r formatC(ncol(bands_crop), format = "f", big.mark = ",", digits = 0)`
-- **ncell():** `r formatC(ncell(bands_crop), format = "f", big.mark = ",", digits = 0)`
-- **nlayers():** `r nlayers(bands_crop)`
+- **Rows:** `r formatC(nrow(bands_crop), format = "f", big.mark = ",", digits = 0)`
+- **Columns:** `r formatC(ncol(bands_crop), format = "f", big.mark = ",", digits = 0)`
+- **Cells:** `r formatC(ncell(bands_crop), format = "f", big.mark = ",", digits = 0)`
+- **Layers:** `r nlayers(bands_crop)`
 - **CRS:** ``r as.character(crs(bands_crop))``
 - **Resolution:** `r paste0(res(bands_crop)[1], " x ", res(bands_crop)[2])`
 </div>
 
 # Plotting Bands & Applying Stretches {.tabset .tabset-pills .tabset-fade}
 ```{r, results = 'asis', echo = FALSE, warning = FALSE, message = FALSE}
+# Question 3.1/2
 cat("## RGB (4,3,2) \n")
 cat("<div class='two-cols'> \n")
 plotRGB(bands_crop, r = 4, g = 3, b = 2)
@@ -162,7 +170,7 @@ cat("</div> \n")
 cat("\n\n")
 ```
 # {.toc-ignore}
-# Why Stretch?
+## Why Stretch?
 Stretching in this case is a way of increasing clarity by normalizing the distribution of brightness across a raster.
 In general, these diagrams from [NeonScience](https://www.neonscience.org/dc-multiband-rasters-r) display the general concept behind stretching:
 
@@ -171,46 +179,212 @@ In general, these diagrams from [NeonScience](https://www.neonscience.org/dc-mul
 ![Lighter](https://www.neonscience.org/sites/default/files/images/dc-spatial-raster/imageStretch_light.jpg)
 </div>
 
-When stretching, there are two methods: *Linear* or *Histogram*. Linear is the method shown in the diagrams above, where points are taken and linearly scaled.
-Histogram stretching occurs conceptually by stretching the ends of the *intesity* (brightness/contrast) of a raster:
+When stretching, there are two common methods: *Linear* or *Histogram*. Linear is the method shown in the diagrams above, where points are taken, and both the points and between areas are linearly scaled.
+Histogram stretching occurs conceptually by stretching the ends of the *intesity* (brightness/contrast) of a raster, as shown in this diagram from [What-When-How.com](http://what-when-how.com):
 ![Histogram](http://what-when-how.com/wp-content/uploads/2012/07/tmp26dc99.png)
 
-```{r, warning = FALSE, message = FALSE}
+# Band Combinations for Delineating Surface Water Features {.tabset .tabset-pills .tabset-fade}
+
+Here we will look at five different formulized combination of Landsat bands to highlight features from our rasters.
+```{r, results = 'asis', echo = FALSE, warning = FALSE, message = FALSE, fig.align = 'center'}
+# Question 4
 NVDI <- (bands_crop[[5, ]] - bands_crop[[4, ]]) / (bands_crop[[5, ]] + bands_crop[[4, ]])
-NVDI_mask <- calc(NVDI, threshold_less_than_zero) %>%
-    calc(is_NA)
-
 NDWI <- (bands_crop[[3, ]] - bands_crop[[5, ]]) / (bands_crop[[3, ]] + bands_crop[[5, ]])   
-NDWI_mask <- calc(NDWI, threshold_greater_than_zero) %>%
-    calc(is_NA)
-
 MNDWI <- (bands_crop[[3, ]] - bands_crop[[6, ]]) / (bands_crop[[3, ]] + bands_crop[[6, ]])
-MNDWI_mask <- calc(MNDWI, threshold_greater_than_zero) %>%
-    calc(is_NA)
-
 WRI <- (bands_crop[[3, ]] + bands_crop[[4, ]]) / (bands_crop[[5, ]] + bands_crop[[6, ]])
-WRI_mask <- calc(WRI, threshold_greater_than_one) %>%
-    calc(is_NA)
-
-SWI <- (1 / (bands_crop[[2, ]] - bands_crop[[6, ]])^0.5) %>%
-    calc(is_NA)
-SWI_mask <- calc(SWI, threshold_less_than_five) %>%
+SWI <- (sqrt(bands_crop[[2, ]] - bands_crop[[6, ]]))^(-1) %>%
     calc(is_NA)
 
 water_features <- stack(c(NVDI, NDWI, MNDWI, WRI, SWI)) %>%
     setNames(c("NVDI", "NDWI", "MNDWI", "WRI", "SWI"))
-plot(water_features, col = colorRampPalette(c("blue", "white", "red"))(256))
+plot(water_features, col = colorRampPalette(c("blue", "white", "red"))(256), axes = FALSE, box = FALSE, legend=FALSE)
+
+cat("\n\n")
+
+cat("*** \n") # horizontal rule
+
+cat("\n\n")
+
+# Question 3.1/2
+cat("## NDVI \n")
+cat("### Normalized Difference Vegetation Index {.toc-ignore} \n")
+cat("The **NVDI** uses a combination of both the **NIR** and **Red** Landsat bands with a water threshold of
+    cells *less* than zero to highlight the surface water in the AOI. In our mapping, water is represented by dark blue,
+    and vegetation is represented by red. \n")
+plot(NVDI, col = colorRampPalette(c("blue", "white", "red"))(256), axes = FALSE, box = FALSE, legend=FALSE)
+cat("\n\n")
+cat("## NDWI \n")
+cat("### Normalized Difference Water Index {.toc-ignore} \n")
+cat("The **NVDWI** uses a combination of both the **NIR** and **Green** Landsat bands with a water threshold of
+    cells *greater* than zero to highlight the surface water in the AOI. In our mapping, water is represented by red,
+    and vegetation is represented by blue. \n")
+plot(NDWI, col = colorRampPalette(c("blue", "white", "red"))(256), axes = FALSE, box = FALSE, legend=FALSE)
+cat("\n\n")
+cat("## MNDWI \n")
+cat("### Modified Normalized Difference Water Index {.toc-ignore} \n")
+cat("The **MNDWI** uses a combination of both the **SWIR1** and **Green** Landsat bands with a water threshold of
+    cells *greater* than zero to highlight the surface water in the AOI. Similar to our mapping of NVDWI, 
+    water is represented by red, while everything else is represented by blue or white. \n")
+plot(MNDWI, col = colorRampPalette(c("blue", "white", "red"))(256), axes = FALSE, box = FALSE, legend=FALSE)
+cat("\n\n")
+cat("## WRI \n")
+cat("### Water Ratio Index {.toc-ignore} \n")
+cat("The **WRI** uses a combination of the **SWIR1**, **NIR**, **Green**, and **Red** Landsat bands with a
+    water threshold of cells *greater* than one to highlight the surface water in the AOI. Similar to our 
+    mapping of NVDWI/MNDWI, water is represented by red, while everything else is represented by blue or white. \n")
+plot(WRI, col = colorRampPalette(c("blue", "white", "red"))(256), axes = FALSE, box = FALSE, legend=FALSE)
+cat("\n\n")
+cat("## SWI \n")
+cat("### Simple Water Index {.toc-ignore} \n")
+cat("The **SWI** uses a combination of both the **SWIR1** and **Blue** Landsat bands with a water threshold of cells
+    *less* than five to highlight the surface water in the AOI. This index was developed in 2016 by Oupa Malahlela, and 
+    you can read bout it in his paper
+    [here](https://www.researchgate.net/publication/305819842_Inland_waterbody_mapping_towards_improving_discrimination_and_extraction_of_inland_surface_water_features).
+    Everything is depicted as blue, where the areas of surface water are blue but visibility distinct.")
+plot(SWI, col = colorRampPalette(c("blue", "white", "red"))(256), axes = FALSE, box = FALSE, legend=FALSE)
+cat("\n\n")
+```
+
+# {.toc-ignore}
+
+***
+
+# Identifying Flood Zones by Clustering
+
+Here we mask the surface water features from our above indices:
+```{r, warning = FALSE, message = FALSE}
+NVDI_mask <- calc(NVDI, threshold_less_than_zero) %>%
+    calc(is_NA)
+NDWI_mask <- calc(NDWI, threshold_greater_than_zero) %>%
+    calc(is_NA)
+MNDWI_mask <- calc(MNDWI, threshold_greater_than_zero) %>%
+    calc(is_NA)
+WRI_mask <- calc(WRI, threshold_greater_than_one) %>%
+    calc(is_NA)
+SWI_mask <- calc(SWI, threshold_less_than_five) %>%
+    calc(is_NA)
+
 water_features_mask <- stack(c(NVDI_mask, NDWI_mask, MNDWI_mask, WRI_mask, SWI_mask)) %>%
     setNames(c("NVDI", "NDWI", "MNDWI", "WRI", "SWI"))
-plot(water_features_mask, col = colorRampPalette(c("white", "blue"))(256))
-```
+plot(water_features_mask, col = colorRampPalette(c("white", "blue"))(256), axes = FALSE, box = FALSE, legend=FALSE)
 
-```{r, warning = FALSE, message = FALSE}
-set.seed(123456)
+# Question 5.1
+set.seed(75157)
+
+# Question 5.2
 kmeans_floods <- getValues(water_features_mask) %>%
     na.omit() %>%
+    scale() %>%
     kmeans(10)
+```
+## Creating K-Means Clusters
 
+*k-means clustering* is a method of partitioning observations into clusters based on mean. A visual depiction of the algorithm can be seen [here](https://en.wikipedia.org/wiki/K-means_clustering#Initialization_methods). In our case, we will find `k = 10` clusters.
+One thing to notice in regards to our data is that, the dimensions of the new clustered data (`r formatC(dim(getValues(water_features_mask)), format = "f", big.mark = ",", digits = 0)`) is representative of all of the masked water features data.
+
+```{r, warning = FALSE, message = FALSE, fig.align = 'center'}
+# Question 5.2 (cont.)
 kmeans_raster <- water_features$NVDI
 values(kmeans_raster) <- kmeans_floods$cluster
+
+# Question 5.3
+most_flooded_cluster <- which.max(table(getValues(NVDI_mask), getValues(kmeans_raster)))
+
+most_flooded <- calc(kmeans_raster, threshold_equal_to_three)
+
+floods <- addLayer(most_flooded, water_features_mask) %>%
+  setNames(c("k-means", "NVDI", "NDWI", "MNDWI", "WRI", "SWI"))
 ```
+
+<div class='two-cols'>
+```{r, warning = FALSE, message = FALSE, echo = FALSE}
+plot(kmeans_raster,
+     main = "K-Means Clusters of Flood Data",
+     col = colorRampPalette(c("white", "blue"))(256),
+     axes = FALSE,
+     box = FALSE,
+     legend=FALSE
+)
+
+plot(most_flooded,
+     main = "Cluster (3) Data with Most Cells",
+     axes = FALSE,
+     box = FALSE,
+     legend=FALSE
+)
+
+```
+</div>
+
+```{r, warning = FALSE, message = FALSE, fig.align = "center", echo = FALSE}
+plot(floods,
+     main = "All Flood Data",
+     col = colorRampPalette(c("white", "blue"))(256),
+     axes = FALSE,
+     box = FALSE,
+     legend=FALSE
+)
+```
+
+# Visualizing Flood Data
+
+```{r, warning = FALSE, message = FALSE, fig.align = 'center'}
+# Question 6
+knitr::kable(
+  cellStats(floods, stat = "sum")*res(bands),
+  col.names = c("Total Flooded Area")
+)
+```
+
+Here, we have the completed flood analysis plot:
+```{r, warning = FALSE, message = FALSE, fig.align = 'center', echo = FALSE}
+plot(calc(floods, sum),
+     main = "Flood Analysis",
+     col = blues9,
+     axes = FALSE,
+     box = FALSE,
+     legend = FALSE
+)
+```
+
+***
+
+# Flood Analysis Interactive Map
+```{r, warning = FALSE, message = FALSE, fig.align = 'center'}
+floods_raster <- calc(floods, sum) %>%
+    calc(zero_to_NA)
+
+mapview(
+  floods_raster,
+  alpha.regions = 0.5,
+  layer.name = "Flood Potential"
+)
+```
+Notice here that while hovering over individual cells, there may be decimals. This is a result of the visualization of pixels in relation to resolution and opacity. In our case, we have a `r res(bands)[1]` by `r res(bands)[2]` resolution raster, and as a result of visualizing this on something of a higher resolution, we get a scaled pixel that may have a decimal.
+
+# Applying Data
+Using the following video, we identify a point of interest, and we want to show if it
+falls into our flood areas.
+
+<center>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/n7aJnLLzocE" frameborder="0" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</center>
+
+In particular, the coordinates of the point we want are **lon: -91.78960**, **lat: 42.06300**, which is the circled area in this picture:
+
+![](img/poi.png)
+
+```{r, warning = FALSE, message = FALSE}
+POI <- st_point(c(-91.78960, 42.06300), dim = "XY") %>%
+  st_sfc(crs = 4326) %>%
+  st_as_sf()
+
+captured <- raster::extract(floods, POI)
+
+knitr::kable(
+  captured
+)
+```
+
+From the above table, we notice that only the **modified normalized difference water index** and **simple water index**
+contained the point we were interested in (however, the SWI may be incorrect due to calculation errors).
