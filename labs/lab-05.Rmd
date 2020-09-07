@@ -318,7 +318,6 @@ plot(most_flooded,
 
 ```{r, warning = FALSE, message = FALSE, fig.align = "center", echo = FALSE}
 plot(floods,
-     main = "All Flood Data",
      col = colorRampPalette(c("white", "blue"))(256),
      axes = FALSE,
      box = FALSE,
