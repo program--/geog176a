@@ -1,0 +1,154 @@
+---
+title: "Geography 176A"
+author: "[Justin Singh-M.](https://geog176a.justinsingh.me)"
+subtitle: 'Lab 05: Flood Risk in Mission Creek: Past, Present, Future'
+output:
+  html_document:
+    theme: sandstone
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include = FALSE}
+library(tidyverse)
+library(sf)        # vector manipulation
+library(raster)    # raster manipulation
+library(fasterize) # "faster" raster
+library(whitebox)  # terrain analysis
+
+# Data libraries
+library(osmdata)   # OSM API
+library(elevatr)   # Elevation  Web Tiles
+
+knitr::opts_chunk$set(
+    warning = FALSE,
+    message = FALSE,
+    out.width = "75%",
+    fig.align = "center"
+)
+```
+
+# Collecting Data
+```{r}
+# Getting Basin Boundary
+waterdata <- "https://labs.waterdata.usgs.gov/api/nldi/linked-data/nwissite/USGS-11119750/basin"
+basin_boundary <- sf::read_sf(waterdata)
+basin_boundary_elev <- elevatr::get_elev_raster(basin_boundary, z = 13) %>%
+    raster::crop(basin_boundary)
+
+basin_boundary_elev <- basin_boundary_elev * 3.281 # convert `m` to `ft`
+
+# Comment when file is already written
+# raster::writeRaster(basin_boundary_elev, "labs/data/basin-boundary-elev.tif", overwrite = TRUE)
+
+# OSM Data
+basin_buildings <- osmdata::opq(basin_boundary) %>%
+    add_osm_feature(key = "building") %>%
+    osmdata_sf()
+
+basin_buildings <- basin_buildings$osm_polygons %>%
+    sf::st_centroid() %>%
+    st_intersection(basin_boundary)
+
+# Plot to test if clipping worked as intended
+# plot(basin_boundary)
+# plot(basin_buildings, max.plot=1, add = TRUE)
+
+basin_railway <- dplyr::filter(basin_buildings, amenity == "railway")
+
+basin_streams <- osmdata::opq(basin_boundary) %>%
+    add_osm_feature(key = "waterway", value = "stream") %>%
+    osmdata_sf()
+
+basin_streams <- basin_streams$osm_lines %>%
+    st_intersection(basin_boundary)
+
+# Plot to test if clipping worked as intended
+# plot(basin_boundary)
+# plot(basin_streams, max.plot=1, add = TRUE)
+```
+## {.tabset .tabset-pills .tabset-fade .toc-ignore}
+```{r, results = 'asis', echo = FALSE}
+cat("\n\n")
+cat("### Basin Boundary")
+cat("\n\n")
+plot(basin_boundary, axes = FALSE, main = "USGS-11119750")
+cat("\n\n")
+cat("### Basin Buildings")
+cat("\n\n")
+plot.new()
+plot(
+    basin_boundary,
+    axes = FALSE,
+    main = "OSM: building=*"
+)
+plot(
+    basin_buildings,
+    axes = FALSE,
+    max.plot = 1,
+    add = TRUE
+)
+cat("\n\n")
+cat("### Basin Streams")
+cat("\n\n")
+plot.new()
+plot(
+    basin_boundary,
+    axes = FALSE,
+    main = "OSM: waterway=stream"
+)
+plot(
+    basin_streams,
+    axes = FALSE,
+    max.plot = 1,
+    add = TRUE
+)
+cat("\n\n")
+```
+
+# Terrain Analysis
+```{r}
+whitebox::wbt_hillshade("labs/data/basin-boundary-elev.tif", "labs/data/basin-elev-hillshade.tif")
+basin_hillshade <- raster::raster("labs/data/basin-elev-hillshade.tif")
+
+# Plot hillshade (background)
+plot(
+    basin_hillshade,
+    axes = FALSE,
+    box = FALSE,
+    col = gray.colors(256, alpha = 0.2),
+    legend = FALSE,
+    main = "Basin Hillshade and Streams"
+)
+# Plot hillshade (mask)
+plot(
+    mask(basin_hillshade, basin_boundary),
+    col = gray.colors(256, alpha = .8),
+    legend = FALSE,
+    add = TRUE
+)
+# Plot basin boundary
+plot(
+    basin_boundary,
+    lty = 3,
+    border = "#575757",
+    add = TRUE
+)
+# Plot streams
+plot(
+    basin_streams,
+    max.plot = 1,
+    lwd = 2,
+    col = "#4852da",
+    add = TRUE
+)
+```
+
+# 2017 Impact Assessment
+```{r}
+```
+
+# Flood Inudation Map library
+```{r}
+```
