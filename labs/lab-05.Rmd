@@ -46,9 +46,6 @@ threshold <- function(x, condition = 0, comparator = "<") {
         }
 }
 
-threshold_equal_to_three <- function(x) {
-  return(threshold(x, condition = 3, comparator = "=="))
-}
 threshold_less_than_five <- function(x) {
     return(threshold(x, condition = 5, comparator = "<"))
 }
@@ -192,7 +189,7 @@ NVDI <- (bands_crop[[5, ]] - bands_crop[[4, ]]) / (bands_crop[[5, ]] + bands_cro
 NDWI <- (bands_crop[[3, ]] - bands_crop[[5, ]]) / (bands_crop[[3, ]] + bands_crop[[5, ]])   
 MNDWI <- (bands_crop[[3, ]] - bands_crop[[6, ]]) / (bands_crop[[3, ]] + bands_crop[[6, ]])
 WRI <- (bands_crop[[3, ]] + bands_crop[[4, ]]) / (bands_crop[[5, ]] + bands_crop[[6, ]])
-SWI <- (sqrt(bands_crop[[2, ]] - bands_crop[[6, ]]))^(-1) %>%
+SWI <- 1/(sqrt(bands_crop[[2, ]]-bands_crop[[6, ]])) %>%
     calc(is_NA)
 
 water_features <- stack(c(NVDI, NDWI, MNDWI, WRI, SWI)) %>%
@@ -290,7 +287,11 @@ values(kmeans_raster) <- kmeans_floods$cluster
 # Question 5.3
 most_flooded_cluster <- which.max(table(getValues(NVDI_mask), getValues(kmeans_raster)))
 
-most_flooded <- calc(kmeans_raster, threshold_equal_to_three)
+threshold_mfc<- function(x) {
+  return(threshold(x, condition = 5, comparator = "=="))
+}
+
+most_flooded <- calc(kmeans_raster, threshold_mfc)
 
 floods <- addLayer(most_flooded, water_features_mask) %>%
   setNames(c("k-means", "NVDI", "NDWI", "MNDWI", "WRI", "SWI"))
@@ -303,14 +304,13 @@ plot(kmeans_raster,
      col = colorRampPalette(c("white", "blue"))(256),
      axes = FALSE,
      box = FALSE,
-     legend=FALSE
+     legend = FALSE
 )
-
 plot(most_flooded,
-     main = "Cluster (3) Data with Most Cells",
+     main = "Cluster (1) Data with Most Cells",
      axes = FALSE,
      box = FALSE,
-     legend=FALSE
+     legend = FALSE
 )
 
 ```
@@ -321,7 +321,7 @@ plot(floods,
      col = colorRampPalette(c("white", "blue"))(256),
      axes = FALSE,
      box = FALSE,
-     legend=FALSE
+     legend = FALSE
 )
 ```
 
@@ -386,4 +386,4 @@ knitr::kable(
 ```
 
 From the above table, we notice that only the **modified normalized difference water index** and **simple water index**
-contained the point we were interested in (however, the SWI may be incorrect due to calculation errors).
+contained the point we were interested in.

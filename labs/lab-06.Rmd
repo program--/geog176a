@@ -109,8 +109,8 @@ cat("\n\n")
 
 # Terrain Analysis
 ```{r}
-whitebox::wbt_hillshade("labs/data/basin-boundary-elev.tif", "labs/data/basin-elev-hillshade.tif")
-basin_hillshade <- raster::raster("labs/data/basin-elev-hillshade.tif")
+whitebox::wbt_hillshade("data/basin-boundary-elev.tif", "data/basin-elev-hillshade.tif")
+basin_hillshade <- raster::raster("data/basin-elev-hillshade.tif")
 
 # Plot hillshade (background)
 plot(
