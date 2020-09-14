@@ -143,10 +143,130 @@ plot(
     col = "#4852da",
     add = TRUE
 )
+
 ```
 
+```{r}
+buffered_streams <- basin_streams %>%
+    st_transform(5070) %>%
+    st_buffer(dist = 10) %>%
+    st_transform(4326)
+
+streams_raster <- fasterize::fasterize(buffered_streams, basin_boundary_elev)
+raster::writeRaster(streams_raster, "labs/data/streams.tif", overwrite = TRUE)
+
+whitebox::wbt_breach_depressions("labs/data/basin-boundary-elev.tif", "labs/data/elev-wbt.tif")
+
+whitebox::wbt_elevation_above_stream("labs/data/elev-wbt.tif", "labs/data/streams.tif", "labs/data/elev-above-streams.tif")
+
+HAND <- raster::raster("labs/data/elev-above-streams.tif")
+river_raster <- raster::raster("labs/data/streams.tif")
+HAND <- HAND + 3.69
+
+values_with_1 <- which(getValues(river_raster) %in% c(1))
+HAND[values_with_1] <- 0
+raster::writeRaster(HAND, "labs/data/HAND.tif", overwrite = TRUE)
+```
 # 2017 Impact Assessment
 ```{r}
+correct_HAND <- raster::raster("labs/data/HAND.tif")
+threshold <- function(x) {return(ifelse(x > 10.02, NA, x))}
+correct_HAND <- calc(correct_HAND, threshold)
+
+plot.new()
+# Plot hillshade (background)
+plot(
+    basin_hillshade,
+    axes = FALSE,
+    box = FALSE,
+    col = gray.colors(256, alpha = 0.2),
+    legend = FALSE,
+    main = "Basin Hillshade and Streams"
+)
+# Plot hillshade (mask)
+plot(
+    mask(basin_hillshade, basin_boundary),
+    col = gray.colors(256, alpha = .8),
+    legend = FALSE,
+    add = TRUE
+)
+# Plot basin boundary
+plot(
+    basin_boundary,
+    lty = 3,
+    border = "#575757",
+    add = TRUE
+)
+# Plot floods
+plot(
+    correct_HAND,
+    col = rev(blues9),
+    add = TRUE
+)
+# Plot railway
+plot(
+    basin_railway,
+    col = "green",
+    cex = 1,
+    pch = 16,
+    add = TRUE
+)
+
+```
+```{r}
+building_impact <- raster::extract(correct_HAND, basin_buildings)
+num_buildings_impacted <- sum(!is.na(building_impact))
+buildings <- as.data.frame(basin_buildings)
+
+buildings$impact <- building_impact
+
+basin_buildings <- buildings %>%
+    st_as_sf()
+# Plot hillshade (background)
+plot(
+    basin_hillshade,
+    axes = FALSE,
+    box = FALSE,
+    col = gray.colors(256, alpha = 0.2),
+    legend = FALSE,
+    main = "Basin Hillshade and Streams"
+)
+# Plot hillshade (mask)
+plot(
+    mask(basin_hillshade, basin_boundary),
+    col = gray.colors(256, alpha = .8),
+    legend = FALSE,
+    add = TRUE
+)
+# Plot basin boundary
+plot(
+    basin_boundary,
+    lty = 3,
+    border = "#575757",
+    add = TRUE
+)
+# Plot floods
+plot(
+    correct_HAND,
+    col = rev(blues9),
+    add = TRUE
+)
+# Impacted Buildings
+plot(
+    basin_buildings,
+    col = ifelse(is.na(basin_buildings$impact), "black", "red"),
+    cex = .08,
+    pch = 16,
+    add = TRUE
+)
+# Plot railway
+plot(
+    basin_railway,
+    col = "green",
+    cex = 1,
+    pch = 16,
+    add = TRUE
+)
 ```
 
 # Flood Inudation Map library
