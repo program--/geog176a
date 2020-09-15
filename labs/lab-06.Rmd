@@ -1,7 +1,7 @@
 ---
 title: "Geography 176A"
 author: "[Justin Singh-M.](https://geog176a.justinsingh.me)"
-subtitle: 'Lab 05: Flood Risk in Mission Creek: Past, Present, Future'
+subtitle: 'Lab 06: Flood Risk in Mission Creek: Past, Present, Future'
 output:
   html_document:
     theme: sandstone
@@ -30,20 +30,28 @@ knitr::opts_chunk$set(
 ```
 
 # Collecting Data
+
+We begin this lab by collecting data from two sources: the USGS, and OpenStreetMap. Here we see the AOI, and corresponding data that we will use.
+
 ```{r}
 # Getting Basin Boundary
 waterdata <- "https://labs.waterdata.usgs.gov/api/nldi/linked-data/nwissite/USGS-11119750/basin"
 basin_boundary <- sf::read_sf(waterdata)
 basin_boundary_elev <- elevatr::get_elev_raster(basin_boundary, z = 13) %>%
-    raster::crop(basin_boundary)
+    raster::crop(basin_boundary) %>%
+    raster::mask(basin_boundary)
 
 basin_boundary_elev <- basin_boundary_elev * 3.281 # convert `m` to `ft`
 
 # Comment when file is already written
-# raster::writeRaster(basin_boundary_elev, "labs/data/basin-boundary-elev.tif", overwrite = TRUE)
+# raster::writeRaster(basin_boundary_elev, "data/basin-boundary-elev.tif", overwrite = TRUE)
+
+bb <- st_bbox(basin_boundary) %>%
+    st_as_sfc() %>%
+    st_transform(4326)
 
 # OSM Data
-basin_buildings <- osmdata::opq(basin_boundary) %>%
+basin_buildings <- osmdata::opq(bb) %>%
     add_osm_feature(key = "building") %>%
     osmdata_sf()
 
@@ -57,7 +65,7 @@ basin_buildings <- basin_buildings$osm_polygons %>%
 
 basin_railway <- dplyr::filter(basin_buildings, amenity == "railway")
 
-basin_streams <- osmdata::opq(basin_boundary) %>%
+basin_streams <- osmdata::opq(bb) %>%
     add_osm_feature(key = "waterway", value = "stream") %>%
     osmdata_sf()
 
@@ -108,8 +116,12 @@ cat("\n\n")
 ```
 
 # Terrain Analysis
+
+We first want to vizualize the data that we will be performing on. Here we have the basin's hillshade, with the river system we are interested in overlayed on top:
+
 ```{r}
-whitebox::wbt_hillshade("data/basin-boundary-elev.tif", "data/basin-elev-hillshade.tif")
+# whitebox::wbt_hillshade("data/basin-boundary-elev.tif", "data/basin-elev-hillshade.tif")
+
 basin_hillshade <- raster::raster("data/basin-elev-hillshade.tif")
 
 # Plot hillshade (background)
@@ -119,7 +131,7 @@ plot(
     box = FALSE,
     col = gray.colors(256, alpha = 0.2),
     legend = FALSE,
-    main = "Basin Hillshade and Streams"
+    main = "Basin and Streams"
 )
 # Plot hillshade (mask)
 plot(
@@ -146,48 +158,71 @@ plot(
 
 ```
 
+Using this, the goal is to create a **Height Above Nearest Drainage** raster, to observe flooding. To do this, we use the `whitebox` package
+We also need to take into account the local reference datum, which our raster does not initially.
+To achieve this, we offset the raster by a certain value retrieved from the USGS for the area.
+After correcting, this gives us the offset *HAND* raster:
+
 ```{r}
+# Buffer streams by 10m
 buffered_streams <- basin_streams %>%
     st_transform(5070) %>%
     st_buffer(dist = 10) %>%
     st_transform(4326)
 
+# Get HAND raster
 streams_raster <- fasterize::fasterize(buffered_streams, basin_boundary_elev)
-raster::writeRaster(streams_raster, "labs/data/streams.tif", overwrite = TRUE)
+raster::writeRaster(streams_raster, "data/streams.tif", overwrite = TRUE)
+# whitebox::wbt_breach_depressions("data/basin-boundary-elev.tif", "data/elev-wbt.tif")
+# whitebox::wbt_elevation_above_stream("data/elev-wbt.tif", "data/streams.tif", "data/elev-above-streams.tif")
 
-whitebox::wbt_breach_depressions("labs/data/basin-boundary-elev.tif", "labs/data/elev-wbt.tif")
+# Correct HAND raster by USGS offset
+hand_raster <- raster::raster("data/elev-above-streams.tif")
+river_raster <- raster::raster("data/streams.tif")
+hand_raster_offset <- hand_raster + 3.69
 
-whitebox::wbt_elevation_above_stream("labs/data/elev-wbt.tif", "labs/data/streams.tif", "labs/data/elev-above-streams.tif")
+# Fix values in HAND raster
+values_with_1 <- which(values(river_raster) == 1)
+values(hand_raster_offset)[values_with_1] <- 0
+raster::writeRaster(hand_raster_offset, "data/hand_raster_offset.tif", overwrite = TRUE)
 
-HAND <- raster::raster("labs/data/elev-above-streams.tif")
-river_raster <- raster::raster("labs/data/streams.tif")
-HAND <- HAND + 3.69
 
-values_with_1 <- which(getValues(river_raster) %in% c(1))
-HAND[values_with_1] <- 0
-raster::writeRaster(HAND, "labs/data/HAND.tif", overwrite = TRUE)
-```
-# 2017 Impact Assessment
-```{r}
-correct_HAND <- raster::raster("labs/data/HAND.tif")
-threshold <- function(x) {return(ifelse(x > 10.02, NA, x))}
-correct_HAND <- calc(correct_HAND, threshold)
-
-plot.new()
-# Plot hillshade (background)
 plot(
-    basin_hillshade,
-    axes = FALSE,
+    hand_raster_offset,
+    col = rev(blues9),
     box = FALSE,
-    col = gray.colors(256, alpha = 0.2),
-    legend = FALSE,
-    main = "Basin Hillshade and Streams"
+    axes = FALSE,
+    main = "Offset HAND Raster"
 )
+```
+
+Note that, while we have this *HAND* raster, it displays all flood stages at once. As a result, we need to perform some
+calculations in order to get the exact flood stage that we want to analyze.
+
+# 2017 Impact Assessment
+
+Based on a USGS historal peak chart, on February 17th 2017, the river the largest observed record of reaching a stage of 10.02 feet.
+The following plot depicts this flood map:
+
+```{r}
+# flood threshold
+hand_raster_offset <- raster::raster("data/hand_raster_offset.tif")
+threshold <- function(x) {return(ifelse(x > 10.02, NA, x))}
+flood_raster <- calc(hand_raster_offset, threshold)
+
 # Plot hillshade (mask)
 plot(
     mask(basin_hillshade, basin_boundary),
     col = gray.colors(256, alpha = .8),
     legend = FALSE,
+    axes = FALSE,
+    box = FALSE,
+    main = "Basin with Flood Streams"
+)
+# Plot floods
+plot(
+    flood_raster,
+    col = rev(blues9),
     add = TRUE
 )
 # Plot basin boundary
@@ -195,12 +230,6 @@ plot(
     basin_boundary,
     lty = 3,
     border = "#575757",
-    add = TRUE
-)
-# Plot floods
-plot(
-    correct_HAND,
-    col = rev(blues9),
     add = TRUE
 )
 # Plot railway
@@ -213,42 +242,38 @@ plot(
 )
 
 ```
+The plot seems relatively accurate to the zoom level we have. The railway seems to be well within the flood zone.
+
+Now, we want to observe the impact on the buildings within our AOI based on this flood. With this in mind, we get the following
+plot describing the impact:
+
 ```{r}
-building_impact <- raster::extract(correct_HAND, basin_buildings)
+# Get impacted buildings and count
+building_impact <- raster::extract(flood_raster, basin_buildings)
 num_buildings_impacted <- sum(!is.na(building_impact))
-buildings <- as.data.frame(basin_buildings)
+basin_buildings$impact <- building_impact
 
-buildings$impact <- building_impact
-
-basin_buildings <- buildings %>%
-    st_as_sf()
-# Plot hillshade (background)
-plot(
-    basin_hillshade,
-    axes = FALSE,
-    box = FALSE,
-    col = gray.colors(256, alpha = 0.2),
-    legend = FALSE,
-    main = "Basin Hillshade and Streams"
-)
-# Plot hillshade (mask)
+# Plot hillshade
 plot(
     mask(basin_hillshade, basin_boundary),
     col = gray.colors(256, alpha = .8),
     legend = FALSE,
-    add = TRUE
+    axes = FALSE,
+    box = FALSE,
+    main = paste("2017 Santa Barbara Flood: ", num_buildings_impacted, " Buildings Impacted")
+)
+# Plot floods
+plot(
+    flood_raster,
+    col = rev(blues9),
+    add = TRUE,
+    legend = FALSE
 )
 # Plot basin boundary
 plot(
     basin_boundary,
     lty = 3,
     border = "#575757",
-    add = TRUE
-)
-# Plot floods
-plot(
-    correct_HAND,
-    col = rev(blues9),
     add = TRUE
 )
 # Impacted Buildings
@@ -269,6 +294,83 @@ plot(
 )
 ```
 
+As we can notice, `r num_buildings_impacted` buildings were impacted as a result of this flood. 
+
 # Flood Inudation Map library
-```{r}
+
+Continuining in the same fashion as describing the impact in 2017, we will create a **Flood Inudation Map Library** for Mission Creek.
+The following FIM library visualizes the impact on buildings from the stage values of 0 to 20 feet:
+
+
+<center>
+![](data/mission-creek-fim.gif)
+</center>
+
+Notice that, since the river system raster has a buffer of 10 meters,
+we have that there are cases of false inudation at stage 0.
+This occurs, despite that the river system may not be that wide.
+ 
+```{r, include = FALSE, eval = FALSE}
+sb <- AOI::aoi_get("Santa Barbara")
+
+flood_raster_sb <- hand_raster_offset %>%
+    crop(sb) %>%
+    mask(sb)
+
+basin_hillshade_sb <- basin_hillshade %>%
+    crop(sb) %>%
+    mask(sb)
+
+buildings_sb <- st_intersection(basin_boundary, basin_buildings)
+
+gifski::save_gif({
+  for(i in 0:20) {
+        flood <- flood_raster_sb
+        values(flood)[which(values(flood) > i)] <- NA
+
+        impact_sb <- raster::extract(flood, buildings_sb)
+        impacted_num_sb <- sum(!is.na(impact_sb))
+        buildings_sb$impact <- impact_sb
+
+        # Plot hillshade
+        plot(
+            mask(basin_hillshade_sb, basin_boundary),
+            col = gray.colors(256, alpha = .8),
+            legend = FALSE,
+            axes = FALSE,
+            main = paste(impacted_num_sb, " Buildings Impacted (", i, " foot stage)")
+        )
+        # Plot floods
+        plot(
+            flood,
+            col = rev(blues9),
+            add = TRUE
+        )
+        # Plot basin boundary
+        plot(
+            basin_boundary,
+            lty = 3,
+            border = "#575757",
+            add = TRUE
+        )
+        # Impacted Buildings
+        plot(
+            buildings_sb,
+            col = ifelse(is.na(buildings_sb$impact), "black", "red"),
+            cex = .08,
+            pch = 16,
+            add = TRUE
+        )
+        # Plot railway
+        plot(
+            basin_railway,
+            col = "green",
+            cex = 1,
+            pch = 16,
+            add = TRUE
+        )
+  }
+}, gif_file = "labs/data/mission-creek-fim.gif",
+   width = 600, height = 600,
+   delay = .7, loop = TRUE)
 ```
