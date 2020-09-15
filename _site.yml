@@ -11,7 +11,7 @@ navbar:
       href: geog176A.html
     - text: Github
       icon: fa-github
-      href: https://github.com/program--/geog176a
+      href: https://github.com/program--/
     - text: CV
       icon: fa-file-text
       href: curriculumvitae.html
