@@ -324,47 +324,80 @@ $(document).ready(function () {
 </div>
 
 
-<p><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></p>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+.img-for {
+  max-width: 50%;
+}
+</style>
 <p>In the summer of 2020 I took a class GIS course based in R. I wrote some code, and did some cool data science. Here is a collection of links!</p>
-<div class="section level2">
-<h2><a href="https://github.com/program--/geog176a"><i class="fas  fa-code "></i> Building a project website</a></h2>
+<div class="section level1">
+<h1><a href="https://github.com/program--/geog176a"><i class="fas  fa-code "></i> Building a project website</a></h1>
 <ul>
 <li>For this assignment, we built a static website using <strong>Rmarkdown</strong>.</li>
 <li>Includes a project github repository for access, view it <a href="https://github.com/program--/geog176a">here</a> or by clicking on the above header.</li>
 <li>Deployed project site as separate repo from main website repo using <strong>Netlify</strong>.</li>
 </ul>
+<hr />
 </div>
-<div class="section level2">
-<h2><a href="https://geog176a.justinsingh.me/labs/lab-02"><i class="fas  fa-chart-bar "></i> Tracking COVID-19 Data</a></h2>
+<div class="section level1">
+<h1><a href="https://geog176a.justinsingh.me/labs/lab-02"><i class="fas  fa-chart-bar "></i> Tracking COVID-19 Data</a></h1>
 <ul>
 <li>Parsed real-world data using <strong>tidyverse</strong> functions and plotted using <strong>ggplot2</strong>.</li>
 <li>Used statistical methods for analyzing confirmed COVID-19 cases.</li>
 <li>Analyzed COVID-19’s weighted mean center travel across the United States.</li>
 </ul>
+<p class="img-for">
+<img src="img/lab02.png" />
+</p>
+<hr />
 </div>
-<div class="section level2">
-<h2><a href="https://geog176a.justinsingh.me/labs/lab-03"><i class="fas  fa-globe-americas "></i> Analyzing Spatial Data in the US</a></h2>
+<div class="section level1">
+<h1><a href="https://geog176a.justinsingh.me/labs/lab-03"><i class="fas  fa-globe-americas "></i> Analyzing Spatial Data in the US</a></h1>
 <ul>
 <li>Gathered spatial data about US cities and their relation to national borders using <strong>tidyverse</strong> and <strong>sf</strong> libraries.</li>
 <li>Used <strong>gghighlight</strong> and <strong>ggplot2</strong> to visualize spatial data, and <strong>sf</strong> to calculate distances.</li>
 <li>Analyzed controversial Federal Agencies’ claims based on an <a href="https://www.aclu.org/other/constitution-100-mile-border-zone">ACLU article</a> to verify statistics given.</li>
 </ul>
+<p class="img-for">
+<img src="img/lab03.png" />
+</p>
+<hr />
 </div>
-<div class="section level2">
-<h2><a href="https://geog176a.justinsingh.me/labs/lab-04"><i class="fas  fa-cubes "></i> Point-in-Polygon Analysis with Tessellations</a></h2>
+<div class="section level1">
+<h1><a href="https://geog176a.justinsingh.me/labs/lab-04"><i class="fas  fa-cubes "></i> Point-in-Polygon Analysis with Tessellations</a></h1>
 <ul>
 <li>Generated and analyzed <strong>tessellated spatial datasets</strong>, such as: <em>square</em> and <em>hexagonal coverages</em>, <em>Voronoi tessellations</em>, and <em>Delaunay triangulation</em>.</li>
 <li>Performed <strong>point-in-polygon</strong> analysis using US Dams dataset from US Army Corps of Engineers.</li>
 <li>Created a <strong>leaflet</strong> interactive map to analyze dams at risk for floods along the Mississippi river system.</li>
 </ul>
+<p class="img-for">
+<img src="img/lab04.png" />
+</p>
+<hr />
 </div>
-<div class="section level2">
-<h2><a href="https://geog176a.justinsingh.me/labs/lab-05"><i class="fas  fa-object-group "></i> Flood Analysis using Remote Sensing</a></h2>
+<div class="section level1">
+<h1><a href="https://geog176a.justinsingh.me/labs/lab-05"><i class="fas  fa-object-group "></i> Flood Analysis using Remote Sensing</a></h1>
 <ul>
 <li>Using <strong>Landsat Data</strong>, generated <strong>rasters</strong> and computed band combinations for surface water features.</li>
 <li>Utilized statistical methods, namely <strong>k-means clustering</strong> to highlight potential flood areas.</li>
 <li>Applied flood data to visually identify at-risk areas using <strong>leaflet/mapview</strong>.</li>
 </ul>
+<p class="img-for">
+<img src="img/lab05.png" />
+</p>
+<hr />
+</div>
+<div class="section level1">
+<h1><a href="https://geog176a.justinsingh.me/labs/lab-06"><i class="fas  fa-exclamation-triangle "></i> Flood Risk in Mission Creek: Past, Present, Future</a></h1>
+<ul>
+<li>Pulled data from the <em>USGS</em> and <em>OpenStreetMap</em> to assess the <strong>flood risk</strong> of buildings near a river system.</li>
+<li>Used <strong>whitebox</strong> to create a <strong>Height Above Nearest Drainage</strong> raster for a specific <strong>AOI</strong>.</li>
+<li>Created a <strong>Flood Inudation Map Library</strong> to observe flood impact on surrounding buildings.</li>
+</ul>
+<p class="img-for">
+<img src="img/lab06.png" />
+</p>
 </div>
 
 

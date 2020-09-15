@@ -19,4 +19,12 @@ A little information about me:
 
 I participated in the UCSB Math department's annual Directed Reading Program, you can check out the presentation my group did on *elliptic curve cryptography* [here](https://ucsbdrp.weebly.com/2020-posters.html)!
 
+As of *09/14/2020*, I've completed this course.
+By taking this class, I learned an extraordinary amount about `r fa("r-project")` and the amazing spatial data libraries that are accessible with it. From what I've learned in this class,
+I'm now able to better understand the concepts of working with data, and visualize my own analytical findings - from tracking COVID-19 data, to assessing flood risk in an area of interest.
+Moreover, the concepts learned in this class translate to my work in the US Air Force, and have allowed me to provide better data analytics to my peers and supervisors on the current status
+of our work, in regards to system, personnel, and training statuses.
+
 If you ever need to contact me, feel free to email me at [justin@justinsingh.me](mailto:justin@justinsingh.me) or [justinsingh-mohudpur@ucsb.edu](mailto:justinsingh-mohudpur@ucsb.edu).
+
+You can view my **GitHub** by clicking the `r fa("github")` button at the top!
