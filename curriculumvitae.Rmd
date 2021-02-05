@@ -1,7 +1,6 @@
 ---
 title: Justin Singh-Mohudpur, Curriculum Vitae
 ---
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
 # {.tabset .tabset-pills .tabset-fade}
 
@@ -18,6 +17,10 @@ title: Justin Singh-Mohudpur, Curriculum Vitae
   - *Community College of the Air Force*\
     Associates of Science, Information Systems Technology\
     **September 2017 - February 2018**\
+
+## Publications
+
+  - **J.M Johnson**, Damilola Eyelade, Keith C. Clarke, Justin Singh-Mohudpur\*. Characterizing Roughness in Terrain Based Synthetic Rating Curves. *In Water Resources Research (In Revision).*
 
 ## Work Experience
   - *United States Air Force Reserve*\
@@ -49,8 +52,6 @@ title: Justin Singh-Mohudpur, Curriculum Vitae
   - **Certifications**
     * CompTIA Security+
     * VMware VCP-DCV 2020 (in-progress)
-    * RHCSA (in-progress)
-    * CISSP (in-progress)
     
   - **Languages**
     * Java
@@ -61,7 +62,9 @@ title: Justin Singh-Mohudpur, Curriculum Vitae
     * LaTeX
     * R
     
-  - **Systems**
+  - **Systems & Technologies**
+    * Docker
+    * Jenkins
     * Windows
     * Debian
     * Red Hat

@@ -1,30 +1,41 @@
 ---
 title: "About Me"
+output:
+    html_document:
+        includes:
+            before_body: assets/before.html
 ---
-`r library(icon)`
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
-<center>
-# Hi, I'm Justin Singh-Mohudpur.
-</center>
+## Hi, I'm Justin Singh-Mohudpur.
   
-<img src="img/me.png" style="width: 25%; float: right; margin: 0 0 1em 1em; border-radius:30px"/>
-Hi! Welcome to my project site for GEOG176A: Introduction to GIS.
+<img src="img/me.png" style="width: 28%; float: right; margin: 0 0 1em 1em; border-radius:30px"/>
 
-A little information about me:
+<div class="fs-5 lead">
 
-  - I'm a senior at UCSB majoring in **Mathematics** with a minor in **Spatial Science**.
-  - I'm a **Systems Administrator** and **Project Manager** for the *US Air Force Reserves*.
-  - I like to compete in **orienteering** (`r fa("map")` + `r fa("compass")`), which started my initial interest in geography!
+Hi! Welcome to my project site for my GIS work being done at [University of California, Santa Barbara](https://geog.ucsb.edu/).
 
-I participated in the UCSB Math department's annual Directed Reading Program, you can check out the presentation my group did on *elliptic curve cryptography* [here](https://ucsbdrp.weebly.com/2020-posters.html)!
+***
 
-As of *09/14/2020*, I've completed this course.
-By taking this class, I learned an extraordinary amount about `r fa("r-project")` and the amazing spatial data libraries that are accessible with it. From what I've learned in this class,
-I'm now able to better understand the concepts of working with data, and visualize my own analytical findings - from tracking COVID-19 data, to assessing flood risk in an area of interest.
-Moreover, the concepts learned in this class translate to my work in the US Air Force, and have allowed me to provide better data analytics to my peers and supervisors on the current status
-of our work, in regards to system, personnel, and training statuses.
+**A little information about me:**
+
+<ul class="list-group fs-6">
+<li class="list-group-item">I'm a senior at UCSB majoring in **Applied Mathematics** with a minor in **Spatial Science**.</li>
+<li class="list-group-item">I'm a **Systems Administrator** and **Project Manager** for the *US Air Force Reserves*.</li>
+<li class="list-group-item">I like to compete in **orienteering** (<i class="fas fa-map-marked-alt"></i> + <i class="fas fa-compass"></i>), which started my initial interest in geography!</li>
+</ul>
+
+**My research interests include:**
+
+<ul class="list-group fs-6">
+<li class="list-group-item">**Computational Hydrology**</li>
+<li class="list-group-item">**Machine Learning**</li>
+<li class="list-group-item">**Algebraic Topology**</li>
+</ul>
+
+***
 
 If you ever need to contact me, feel free to email me at [justin@justinsingh.me](mailto:justin@justinsingh.me) or [justinsingh-mohudpur@ucsb.edu](mailto:justinsingh-mohudpur@ucsb.edu).
 
-You can view my **GitHub** by clicking the `r fa("github")` button at the top!
+You can view my **GitHub** by clicking the <i class="fab fa-github"></i> button at the top!
+
+</div>
