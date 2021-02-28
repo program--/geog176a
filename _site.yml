@@ -9,12 +9,9 @@ navbar:
     - text: "GIS Work"
       icon: fa-globe
       href: gis.html
-    - text: Github
+    - text: GitHub
       icon: fab fa-github
       href: https://github.com/program--/
-    - text: CV
-      icon: fa-file-alt
-      href: curriculumvitae.html
     - text: Personal Website
       icon: fa-user
       href: https://justinsingh.me
