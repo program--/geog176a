@@ -12,30 +12,32 @@ output:
 
 <div class="fs-5 lead">
 
-Hi! Welcome to my project site for my GIS work being done at [University of California, Santa Barbara](https://geog.ucsb.edu/).
+Welcome to my project site for my previous GIS work affiliated with [University of California, Santa Barbara](https://geog.ucsb.edu/),
+and future work affiliated with [Georgia Institute of Technology](https://www.cc.gatech.edu/).
+
+</div>
 
 ***
 
 **A little information about me:**
 
-<ul class="list-group fs-6">
-<li class="list-group-item">I'm a senior at UCSB majoring in **Applied Mathematics** with a minor in **Spatial Science**.</li>
-<li class="list-group-item">I'm a **Systems Administrator** and **Project Manager** for the *US Air Force Reserves*.</li>
-<li class="list-group-item">I like to compete in **orienteering** (<i class="fas fa-map-marked-alt"></i> + <i class="fas fa-compass"></i>), which started my initial interest in geography!</li>
-</ul>
+> My Bachelor's degree from *UCSB* is in **Applied Mathematics** with a minor in **Spatial Science**.
+>
+> I'm a **Data Engineer** with the [*Urban Flooding Open Knowledge Network*](https://ufokn.com).
+>
+> I'm a **Systems Administrator** in the *US Air Force Reserves*.
+>
+> I like to compete in **orienteering** (<i class="fas fa-map-marked-alt"></i> + <i class="fas fa-compass"></i>), which started my initial interest in geography!
 
 **My research interests include:**
 
-<ul class="list-group fs-6">
-<li class="list-group-item">**Computational Hydrology**</li>
-<li class="list-group-item">**Machine Learning**</li>
-<li class="list-group-item">**Algebraic Topology**</li>
-</ul>
+* Computational Hydrology
+* Machine Learning
+* Algorithms & Optimization
+* Applied Topology
 
 ***
 
-If you ever need to contact me, feel free to email me at [justin@justinsingh.me](mailto:justin@justinsingh.me) or [justinsingh-mohudpur@ucsb.edu](mailto:justinsingh-mohudpur@ucsb.edu).
+If you ever need to contact me, feel free to email me at [justin@justinsingh.me](mailto:justin@justinsingh.me).
 
 You can view my **GitHub** by clicking the <i class="fab fa-github"></i> button at the top!
-
-</div>

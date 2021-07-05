@@ -1,7 +1,7 @@
 name: "justin-singh-gis"
 output_dir: "."
 navbar:
-  title: "GIS @ UCSB"
+  title: "GIS @ UCSB+TECH"
   left:
     - text: "Home"
       icon: fa-home
