@@ -1,63 +1,81 @@
-gis:
-  - group: "UCSB | GEOG 176C"
-    prof:
-      name: Dr. Krzysztof Janowicz
-      website: https://people.geog.ucsb.edu/~jano/
-    projects:
-      - title: "BURNDEX: Spatial-temporal Burning Index Forecasting"
-        desc:
-          - "Supplementing Chandler Burning Index forecasts with a machine learning approach."
-          - "Built together with [Angus Watters](https://anguswg-ucsb.github.io)."
-        icon: "fas fa-fire"
-        img: https://burndex.ai/assets/img/logo.png
-        url: https://burndex.ai
+# R Packages
+- group: "R Packages"
+  projects:
+    - title: fipio
+      desc:
+        - "Lightweight & performant FIPS code information retrieval utilities."
+        - "Funded by the [Urban Flooding Open Knowledge Network (UF-OKN)](https://ufokn.com)."
+      icon: "fas fa-globe-americas"
+      img: img/pkgs/fipio.png
+      url: https://github.com/program--/fipio
+    
+    - title: spress
+      desc:
+        - "R package and C++ library for geospatial space-division based compression and encoding."
+        - "Funded by the [Urban Flooding Open Knowledge Network (UF-OKN)](https://ufokn.com)."
+      url: https://github.com/UFOKN/spress
 
-  - group: "UCSB | GEOG 176A"
-    prof:
-      name: Dr. Mike Johnson
-      website: https://mikejohnson51.github.io
-    projects:
-      - title: Tracking COVID-19 Data
-        desc:
-          - Parsed real-world data using tidyverse functions and plotted using ggplot2.
-          - Used statistical methods for analyzing confirmed COVID-19 cases.
-          - Analyzed COVID-19’s weighted mean center travel across the United States.
-        icon: "fas fa-chart-bar"
-        img: img/lab02.png
-        url: https://gis.justinsingh.me/labs/lab-02
+# GEOG 176C
+- group: "UCSB | GEOG 176C"
+  prof:
+    name: Dr. Krzysztof Janowicz
+    website: https://people.geog.ucsb.edu/~jano/
+  projects:
+    - title: "BURNDEX: Spatial-temporal Burning Index Forecasting"
+      desc:
+        - "Supplementing Chandler Burning Index forecasts with a machine learning approach."
+        - "Built together with [Angus Watters](https://anguswg-ucsb.github.io)."
+      icon: "fas fa-fire"
+      img: https://burndex.ai/assets/img/logo.png
+      url: https://burndex.ai
 
-      - title: Analyzing Spatial Data in the US
-        desc:
-          - Gathered spatial data about US cities and their relation to national borders using tidyverse and sf libraries.
-          - Used gghighlight and ggplot2 to visualize spatial data, and sf to calculate distances.
-          - Analyzed controversial Federal Agencies’ claims based on an [ACLU article](https://www.aclu.org/other/constitution-100-mile-border-zone) to verify statistics given.
-        icon: "fas fa-globe-americas"
-        img: img/lab03.png
-        url: https://gis.justinsingh.me/labs/lab-03
+# GEOG 176A
+- group: "UCSB | GEOG 176A"
+  prof:
+    name: Dr. Mike Johnson
+    website: https://mikejohnson51.github.io
+  projects:
+    - title: Tracking COVID-19 Data
+      desc:
+        - Parsed real-world data using tidyverse functions and plotted using ggplot2.
+        - Used statistical methods for analyzing confirmed COVID-19 cases.
+        - Analyzed COVID-19’s weighted mean center travel across the United States.
+      icon: "fas fa-chart-bar"
+      img: img/lab02.png
+      url: https://gis.justinsingh.me/labs/lab-02
 
-      - title: Point-in-Polygon Analysis with Tessellations
-        desc:
-          - "Generated and analyzed tessellated spatial datasets, such as: square and hexagonal coverages, Voronoi tessellations, and Delaunay triangulation."
-          - Performed point-in-polygon analysis using US Dams dataset from US Army Corps of Engineers.
-          - Created a leaflet interactive map to analyze dams at risk for floods along the Mississippi river system.
-        icon: "fas fa-cubes"
-        img: img/lab04.png
-        url: https://gis.justinsingh.me/labs/lab-04
-      
-      - title: Flood Analysis using Remote Sensing
-        desc:
-          - Using Landsat Data generated rasters and computed band combinations for surface water features.
-          - Utilized statistical methods, namely k-means clustering to highlight potential flood areas.
-          - Applied flood data to visually identify at-risk areas using leaflet/mapview.
-        icon: "fas fa-object-group"
-        img: img/lab05.png
-        url: https://gis.justinsingh.me/labs/lab-05
-      
-      - title: "Flood Risk in Mission Creek: Past, Present, Future"
-        desc:
-          - Pulled data from the USGS and OpenStreetMap to assess the flood risk of buildings near a river system.
-          - Used whitebox to create a Height Above Nearest Drainage raster for a specific AOI.
-          - Created a Flood Inudation Map Library to observe flood impact on surrounding buildings.
-        icon: "fas fa-exclamation-triangle"
-        img: img/lab06.png
-        url: https://gis.justinsingh.me/labs/lab-06
+    - title: Analyzing Spatial Data in the US
+      desc:
+        - Gathered spatial data about US cities and their relation to national borders using tidyverse and sf libraries.
+        - Used gghighlight and ggplot2 to visualize spatial data, and sf to calculate distances.
+        - Analyzed controversial Federal Agencies’ claims based on an [ACLU article](https://www.aclu.org/other/constitution-100-mile-border-zone) to verify statistics given.
+      icon: "fas fa-globe-americas"
+      img: img/lab03.png
+      url: https://gis.justinsingh.me/labs/lab-03
+
+    - title: Point-in-Polygon Analysis with Tessellations
+      desc:
+        - "Generated and analyzed tessellated spatial datasets, such as: square and hexagonal coverages, Voronoi tessellations, and Delaunay triangulation."
+        - Performed point-in-polygon analysis using US Dams dataset from US Army Corps of Engineers.
+        - Created a leaflet interactive map to analyze dams at risk for floods along the Mississippi river system.
+      icon: "fas fa-cubes"
+      img: img/lab04.png
+      url: https://gis.justinsingh.me/labs/lab-04
+    
+    - title: Flood Analysis using Remote Sensing
+      desc:
+        - Using Landsat Data generated rasters and computed band combinations for surface water features.
+        - Utilized statistical methods, namely k-means clustering to highlight potential flood areas.
+        - Applied flood data to visually identify at-risk areas using leaflet/mapview.
+      icon: "fas fa-object-group"
+      img: img/lab05.png
+      url: https://gis.justinsingh.me/labs/lab-05
+    
+    - title: "Flood Risk in Mission Creek: Past, Present, Future"
+      desc:
+        - Pulled data from the USGS and OpenStreetMap to assess the flood risk of buildings near a river system.
+        - Used whitebox to create a Height Above Nearest Drainage raster for a specific AOI.
+        - Created a Flood Inudation Map Library to observe flood impact on surrounding buildings.
+      icon: "fas fa-exclamation-triangle"
+      img: img/lab06.png
+      url: https://gis.justinsingh.me/labs/lab-06

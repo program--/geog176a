@@ -13,7 +13,7 @@ output:
 <div class="fs-5 lead">
 
 Welcome to my project site for my previous GIS work affiliated with [University of California, Santa Barbara](https://geog.ucsb.edu/),
-and future work affiliated with [Georgia Institute of Technology](https://www.cc.gatech.edu/).
+and current work affiliated with [Georgia Institute of Technology](https://www.cc.gatech.edu/).
 
 </div>
 

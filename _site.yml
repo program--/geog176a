@@ -18,7 +18,7 @@ navbar:
 output:
   html_document:
     theme:
-      version: 4
+      version: 5
       bootswatch: cosmo
     css: assets/style.css
     includes:

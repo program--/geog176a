@@ -6,43 +6,89 @@ title: "Projects"
 library(glue)
 library(magrittr)
 
-groups <- yaml::read_yaml("data/gis_projects.yml")$gis
+groups <- yaml::read_yaml("data/gis_projects.yml")
+
+make_card <- function(project) {
+    card_img <- if (is.null(project$img)) {
+        ""
+    } else {
+        htmltools::tags$img(
+            src   = project$img,
+            class = "card-img-top",
+            style = "width: 33%; padding: 0.5rem; margin: auto;"
+        )
+    }
+
+    card_desc <- htmltools::tags$ul(
+        lapply(project$desc, htmltools::tags$li, class = "list-group-item"),
+        class = "list-group list-group-flush"
+    )
+
+    card_title <- htmltools::tags$h5(
+        if (!is.null(project$icon)) htmltools::tags$i(class = project$icon),
+        project$title,
+        class = "card-title"
+    )
+
+    card_btn <- htmltools::tags$a(
+        "View",
+        href  = project$url,
+        class = "btn btn-primary btn-lg"
+    )
+
+    card_body <- htmltools::tags$div(
+        card_title,
+        card_desc,
+        class = "card-body"
+    )
+
+    card_footer <- htmltools::tags$div(
+        htmltools::tags$p(
+            card_btn,
+            style = "text-align: center; margin-bottom 0;"
+        ),
+        class = "card-footer"
+    )
+
+    stringr::str_replace_all(as.character(htmltools::tags$div(
+        card_img,
+        card_body,
+        card_footer,
+        class = "card h-100",
+        style = "width: 100%; margin-top: 1rem;"
+    )), "  ", "")
+}
 ```
 
 ```{r projects, echo = FALSE, warning = FALSE, message = FALSE, results = "asis"}
-#nolint start
-for (grp_index in seq_len(length(groups))) {
-    cat(glue("
-        ## {groups[[grp_index]]$group} \\
-        w/ [{groups[[grp_index]]$prof$name}]({groups[[grp_index]]$prof$website}) \\
-        {{.tabset .tabset-fade .tabset-pills}}
-        "))
+for (group in groups) {
+    if (!is.null(group$prof$name)) {
+        if (!is.null(group$prof$website)) {
+            group_prof <- glue("w/ [{group$prof$name}](group$prof$website)")
+        } else {
+            group_prof <- glue("w/ {group$prof$name}")
+        }
+    } else {
+        group_prof <- NULL
+    }
 
+    group_title <- paste(
+        "##",
+        group$group,
+        group_prof,
+        "{.tabset .tabset-fade .tabset-pills}"
+    )
+
+    cat(group_title)
     cat("\n\n")
 
-    for (project in groups[[grp_index]]$projects) {
-        cat(glue("### {stringr::str_trunc(project$title, width = 15, side = 'right')}"))
+    for (project in group$projects) {
+        cat("###", stringr::str_trunc(project$title, 15, "right"))
         cat("\n\n")
-        glue('
-            <div class="card h-100" style="width: 100%; margin-top: 1rem;">
-            <img src="{project$img}" class="card-img-top" style="width: 33%; padding: 0.5rem; margin: auto;">
-            <div class="card-body">
-            <h5 class="card-title"><i class="{project$icon}"></i> {project$title}</h5>
-            {htmltools::tags$ul(lapply(project$desc, htmltools::tags$li, class = "list-group-item"), class = "list-group list-group-flush")}
-            </div>
-            <div class="card-footer">
-            <p style="text-align: center; margin-bottom: 0;">
-            <a href="{project$url}" class="btn btn-primary btn-lg">View</a>
-            </p>
-            </div>
-            </div>
-        ') %>%
-            stringr::str_replace_all("  ", "") %>%
-            cat()
+        cat(make_card(project))
         cat("\n\n")
     }
 
-    cat("***\n\n")
+    cat("\n\n")
 }
-#nolint end
 ```
