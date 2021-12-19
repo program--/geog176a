@@ -64,7 +64,7 @@ make_card <- function(project) {
 for (group in groups) {
     if (!is.null(group$prof$name)) {
         if (!is.null(group$prof$website)) {
-            group_prof <- glue("w/ [{group$prof$name}](group$prof$website)")
+            group_prof <- glue("w/ [{group$prof$name}]({group$prof$website})")
         } else {
             group_prof <- glue("w/ {group$prof$name}")
         }
